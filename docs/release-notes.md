@@ -7,6 +7,10 @@
   _If needed, you can update to SMAPI 3.15.0 first and then install to the latest version._
 -->
 
+## Upcoming release for Stardew Valley 1.6
+* For players:
+  * Removed `player_setimmunity` console command (broke in 1.6 and rarely used).
+
 ## Upcoming release
 * For players:
   * Fixed SMAPI applying different DPI awareness settings than the game (thanks to spacechase0!).
