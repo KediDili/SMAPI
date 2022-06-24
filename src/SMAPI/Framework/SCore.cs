@@ -78,9 +78,6 @@ namespace StardewModdingAPI.Framework
         /****
         ** Higher-level components
         ****/
-        /// <summary>Manages console commands.</summary>
-        private readonly CommandManager CommandManager;
-
         /// <summary>The underlying game instance.</summary>
         private SGameRunner Game = null!; // initialized very early
 
@@ -112,12 +109,6 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>The maximum number of consecutive attempts SMAPI should make to recover from an update error.</summary>
         private readonly Countdown UpdateCrashTimer = new(60); // 60 ticks = roughly one second
-
-        /// <summary>A list of queued commands to parse and execute.</summary>
-        private readonly CommandQueue RawCommandQueue = new();
-
-        /// <summary>A list of commands to execute on each screen.</summary>
-        private readonly PerScreen<List<QueuedCommand>> ScreenCommandQueue = new(() => new List<QueuedCommand>());
 
         /*********
         ** Accessors
@@ -165,7 +156,6 @@ namespace StardewModdingAPI.Framework
                 this.Settings.OverrideDeveloperMode(developerMode.Value);
 
             this.LogManager = new LogManager(logPath: logPath, colorConfig: this.Settings.ConsoleColors, writeToConsole: writeToConsole, verboseLogging: this.Settings.VerboseLogging, isDeveloperMode: this.Settings.DeveloperMode, getScreenIdForLog: this.GetScreenIdForLog);
-            this.CommandManager = new CommandManager(this.Monitor);
             SCore.DeprecationManager = new DeprecationManager(this.Monitor, this.ModRegistry);
             SDate.Translations = this.Translator;
 
@@ -380,16 +370,6 @@ namespace StardewModdingAPI.Framework
             if (!this.ValidateContentIntegrity())
                 this.Monitor.Log("SMAPI found problems in your game's content files which are likely to cause errors or crashes. Consider uninstalling XNB mods or reinstalling the game.", LogLevel.Error);
 
-            // start SMAPI console
-            new Thread(
-                () => this.LogManager.RunConsoleInputLoop(
-                    commandManager: this.CommandManager,
-                    reloadTranslations: this.ReloadTranslations,
-                    handleInput: input => this.RawCommandQueue.Add(input),
-                    continueWhile: () => this.IsGameRunning && !this.IsExiting
-                )
-            ).Start();
-
             this.InitializeBeforeFirstAssetLoaded();
         }
 
@@ -435,38 +415,6 @@ namespace StardewModdingAPI.Framework
                 }
 
                 /*********
-                ** Parse commands
-                *********/
-                if (this.RawCommandQueue.TryDequeue(out string[]? rawCommands))
-                {
-                    foreach (string rawInput in rawCommands)
-                    {
-                        // parse command
-                        string? name;
-                        string[]? args;
-                        Command? command;
-                        int screenId;
-                        try
-                        {
-                            if (!this.CommandManager.TryParse(rawInput, out name, out args, out command, out screenId))
-                            {
-                                this.Monitor.Log("Unknown command; type 'help' for a list of available commands.", LogLevel.Error);
-                                continue;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            this.Monitor.Log($"Failed parsing that command:\n{ex.GetLogSummary()}", LogLevel.Error);
-                            continue;
-                        }
-
-                        // queue command for screen
-                        this.ScreenCommandQueue.GetValueForScreen(screenId).Add(new(command, name, args));
-                    }
-                }
-
-
-                /*********
                 ** Run game update
                 *********/
                 runGameUpdate();
@@ -498,34 +446,8 @@ namespace StardewModdingAPI.Framework
         /// <param name="runUpdate">Invoke the game's update logic.</param>
         private void OnPlayerInstanceUpdating(SGame instance, GameTime gameTime, Action runUpdate)
         {
-            bool verbose = this.Monitor.IsVerbose;
-
             try
             {
-                /*********
-                ** Execute commands
-                *********/
-                if (this.ScreenCommandQueue.Value.Any())
-                {
-                    var commandQueue = this.ScreenCommandQueue.Value;
-                    foreach ((Command? command, string? name, string[]? args) in commandQueue)
-                    {
-                        try
-                        {
-                            command.Callback.Invoke(name, args);
-                        }
-                        catch (Exception ex)
-                        {
-                            if (command.Mod != null)
-                                command.Mod.LogAsMod($"Mod failed handling that command:\n{ex.GetLogSummary()}", LogLevel.Error);
-                            else
-                                this.Monitor.Log($"Failed handling that command:\n{ex.GetLogSummary()}", LogLevel.Error);
-                        }
-                    }
-                    commandQueue.Clear();
-                }
-
-
                 /*********
                 ** Special cases
                 *********/
@@ -1256,7 +1178,6 @@ namespace StardewModdingAPI.Framework
                     TranslationHelper translationHelper = new(mod, "", LanguageCode.en);
                     IModHelper modHelper;
                     {
-                        ICommandHelper commandHelper = new CommandHelper(mod, this.CommandManager);
                         IContentPackHelper contentPackHelper = new ContentPackHelper(
                             mod: mod,
                             contentPacks: new Lazy<IContentPack[]>(GetContentPacks),
@@ -1267,7 +1188,7 @@ namespace StardewModdingAPI.Framework
                         IModRegistry modRegistryHelper = new ModRegistryHelper(mod, this.ModRegistry, proxyFactory, monitor);
                         IMultiplayerHelper multiplayerHelper = new MultiplayerHelper(mod, this.Multiplayer);
 
-                        modHelper = new ModHelper(mod, mod.DirectoryPath, contentPackHelper, commandHelper, dataHelper, modRegistryHelper, reflectionHelper, multiplayerHelper, translationHelper);
+                        modHelper = new ModHelper(mod, mod.DirectoryPath, contentPackHelper, dataHelper, modRegistryHelper, reflectionHelper, multiplayerHelper, translationHelper);
                     }
 
                     // init mod
@@ -1366,12 +1287,6 @@ namespace StardewModdingAPI.Framework
 
             error = null;
             return true;
-        }
-
-        /// <summary>Reload translations for all mods.</summary>
-        private void ReloadTranslations()
-        {
-            this.ReloadTranslations(this.ModRegistry.GetAll());
         }
 
         /// <summary>Reload translations for the given mods.</summary>
@@ -1561,15 +1476,5 @@ namespace StardewModdingAPI.Framework
 
             return null;
         }
-
-
-        /*********
-        ** Private types
-        *********/
-        /// <summary>A queued console command to run during the update loop.</summary>
-        /// <param name="Command">The command which can handle the input.</param>
-        /// <param name="Name">The parsed command name.</param>
-        /// <param name="Args">The parsed command arguments.</param>
-        private readonly record struct QueuedCommand(Command Command, string Name, string[] Args);
     }
 }

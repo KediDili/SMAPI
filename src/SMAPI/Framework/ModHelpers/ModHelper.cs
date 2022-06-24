@@ -25,9 +25,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
         public IModRegistry ModRegistry { get; }
 
         /// <inheritdoc />
-        public ICommandHelper ConsoleCommands { get; }
-
-        /// <inheritdoc />
         public IMultiplayerHelper Multiplayer { get; }
 
         /// <inheritdoc />
@@ -40,12 +37,7 @@ namespace StardewModdingAPI.Framework.ModHelpers
         /// <summary>Construct an instance.</summary>
         /// <param name="mod">The mod using this instance.</param>
         /// <param name="modDirectory">The full path to the mod's folder.</param>
-        /// <param name="events">Manages access to events raised by SMAPI.</param>
-        /// <param name="contentHelper">An API for loading content assets.</param>
-        /// <param name="gameContentHelper">An API for loading content assets from the game's <c>Content</c> folder or via <see cref="IModEvents.Content"/>.</param>
-        /// <param name="modContentHelper">An API for loading content assets from your mod's files.</param>
         /// <param name="contentPackHelper">An API for managing content packs.</param>
-        /// <param name="commandHelper">An API for managing console commands.</param>
         /// <param name="dataHelper">An API for reading and writing persistent mod data.</param>
         /// <param name="modRegistry">an API for fetching metadata about loaded mods.</param>
         /// <param name="reflectionHelper">An API for accessing private game code.</param>
@@ -54,7 +46,7 @@ namespace StardewModdingAPI.Framework.ModHelpers
         /// <exception cref="ArgumentNullException">An argument is null or empty.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="modDirectory"/> path does not exist on disk.</exception>
         public ModHelper(
-            IModMetadata mod, string modDirectory, IContentPackHelper contentPackHelper, ICommandHelper commandHelper, IDataHelper dataHelper, IModRegistry modRegistry, IReflectionHelper reflectionHelper, IMultiplayerHelper multiplayer, ITranslationHelper translationHelper
+            IModMetadata mod, string modDirectory, IContentPackHelper contentPackHelper, IDataHelper dataHelper, IModRegistry modRegistry, IReflectionHelper reflectionHelper, IMultiplayerHelper multiplayer, ITranslationHelper translationHelper
         )
             : base(mod)
         {
@@ -69,7 +61,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
             this.ContentPacks = contentPackHelper ?? throw new ArgumentNullException(nameof(contentPackHelper));
             this.Data = dataHelper ?? throw new ArgumentNullException(nameof(dataHelper));
             this.ModRegistry = modRegistry ?? throw new ArgumentNullException(nameof(modRegistry));
-            this.ConsoleCommands = commandHelper ?? throw new ArgumentNullException(nameof(commandHelper));
             this.Reflection = reflectionHelper ?? throw new ArgumentNullException(nameof(reflectionHelper));
             this.Multiplayer = multiplayer ?? throw new ArgumentNullException(nameof(multiplayer));
             this.Translation = translationHelper ?? throw new ArgumentNullException(nameof(translationHelper));

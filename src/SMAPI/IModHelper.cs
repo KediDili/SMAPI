@@ -9,9 +9,6 @@ namespace StardewModdingAPI
         /// <summary>The full path to the mod's folder.</summary>
         string DirectoryPath { get; }
 
-        /// <summary>An API for managing console commands.</summary>
-        ICommandHelper ConsoleCommands { get; }
-
         /// <summary>An API for managing content packs.</summary>
         IContentPackHelper ContentPacks { get; }
 

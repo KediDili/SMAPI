@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using StardewModdingAPI.Framework.Commands;
 using StardewModdingAPI.Framework.Models;
 using StardewModdingAPI.Framework.ModLoading;
 using StardewModdingAPI.Internal;
@@ -141,39 +140,6 @@ namespace StardewModdingAPI.Framework.Logging
         /****
         ** Console input
         ****/
-        /// <summary>Run a loop handling console input.</summary>
-        [SuppressMessage("ReSharper", "FunctionNeverReturns", Justification = "The thread is aborted when the game exits.")]
-        public void RunConsoleInputLoop(CommandManager commandManager, Action reloadTranslations, Action<string> handleInput, Func<bool> continueWhile)
-        {
-            // prepare console
-            this.Monitor.Log("Type 'help' for help, or 'help <cmd>' for a command's usage", LogLevel.Info);
-            commandManager
-                .Add(new HelpCommand(commandManager), this.Monitor)
-                .Add(new HarmonySummaryCommand(), this.Monitor)
-                .Add(new ReloadI18nCommand(reloadTranslations), this.Monitor);
-
-            // start handling command line input
-            Thread inputThread = new(() =>
-            {
-                while (true)
-                {
-                    // get input
-                    string? input = Console.ReadLine();
-                    if (string.IsNullOrWhiteSpace(input))
-                        continue;
-
-                    // handle command
-                    this.Monitor.LogUserInput(input);
-                    handleInput(input);
-                }
-            });
-            inputThread.Start();
-
-            // keep console thread alive while the game is running
-            while (continueWhile())
-                Thread.Sleep(1000 / 10);
-        }
-
         /// <summary>Show a 'press any key to exit' message, and exit when they press a key.</summary>
         public void PressAnyKeyToExit()
         {
