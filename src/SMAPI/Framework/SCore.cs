@@ -758,9 +758,6 @@ namespace StardewModdingAPI.Framework
                     break;
 
                 case LoadStage.Loaded:
-                    // override chat box
-                    Game1.onScreenMenus.Remove(Game1.chatBox);
-                    Game1.onScreenMenus.Add(Game1.chatBox = new SChatBox(this.LogManager.MonitorForGame));
                     break;
             }
         }
