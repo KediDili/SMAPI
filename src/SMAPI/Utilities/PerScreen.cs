@@ -1,10 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if SMAPI_DEPRECATED
-using StardewModdingAPI.Framework;
-using StardewModdingAPI.Framework.Deprecations;
-#endif
 
 namespace StardewModdingAPI.Utilities
 {
@@ -52,19 +48,7 @@ namespace StardewModdingAPI.Utilities
         public PerScreen(Func<T> createNewState)
         {
             if (createNewState is null)
-            {
-#if SMAPI_DEPRECATED
-                createNewState = (() => default!);
-                SCore.DeprecationManager.Warn(
-                    null,
-                    $"calling the {nameof(PerScreen<T>)} constructor with null",
-                    "3.14.0",
-                    DeprecationLevel.Info
-                );
-#else
                 throw new ArgumentNullException(nameof(createNewState));
-#endif
-            }
 
             this.CreateNewState = createNewState;
         }

@@ -32,9 +32,6 @@ using StardewModdingAPI.Framework.Networking;
 using StardewModdingAPI.Framework.Reflection;
 using StardewModdingAPI.Framework.Rendering;
 using StardewModdingAPI.Framework.Serialization;
-#if SMAPI_DEPRECATED
-using StardewModdingAPI.Framework.StateTracking.Comparers;
-#endif
 using StardewModdingAPI.Framework.StateTracking.Snapshots;
 using StardewModdingAPI.Framework.Utilities;
 using StardewModdingAPI.Internal;
@@ -140,11 +137,6 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>The maximum number of consecutive attempts SMAPI should make to recover from an update error.</summary>
         private readonly Countdown UpdateCrashTimer = new(60); // 60 ticks = roughly one second
-
-#if SMAPI_DEPRECATED
-        /// <summary>Asset interceptors added or removed since the last tick.</summary>
-        private readonly List<AssetInterceptorChange> ReloadAssetInterceptorsQueue = new();
-#endif
 
         /// <summary>A list of queued commands to parse and execute.</summary>
         private readonly CommandQueue RawCommandQueue = new();
@@ -475,41 +467,6 @@ namespace StardewModdingAPI.Framework
                     this.Monitor.Log("SMAPI shutting down: aborting update.");
                     return;
                 }
-
-#if SMAPI_DEPRECATED
-                /*********
-                ** Reload assets when interceptors are added/removed
-                *********/
-                if (this.ReloadAssetInterceptorsQueue.Any())
-                {
-                    // get unique interceptors
-                    AssetInterceptorChange[] interceptors = this.ReloadAssetInterceptorsQueue
-                        .GroupBy(p => p.Instance, new ObjectReferenceComparer<object>())
-                        .Select(p => p.First())
-                        .ToArray();
-                    this.ReloadAssetInterceptorsQueue.Clear();
-
-                    // log summary
-                    this.Monitor.Log("Invalidating cached assets for new editors & loaders...");
-                    this.Monitor.Log(
-                        "   changed: "
-                        + string.Join(", ",
-                            interceptors
-                                .GroupBy(p => p.Mod)
-                                .OrderBy(p => p.Key.DisplayName)
-                                .Select(modGroup =>
-                                    $"{modGroup.Key.DisplayName} ("
-                                    + string.Join(", ", modGroup.GroupBy(p => p.WasAdded).ToDictionary(p => p.Key, p => p.Count()).Select(p => $"{(p.Key ? "added" : "removed")} {p.Value}"))
-                                    + ")"
-                                )
-                        )
-                        + "."
-                    );
-
-                    // reload affected assets
-                    this.ContentCore.InvalidateCache(asset => interceptors.Any(p => p.CanIntercept(asset)));
-                }
-#endif
 
                 /*********
                 ** Parse commands
@@ -1659,69 +1616,6 @@ namespace StardewModdingAPI.Framework
             this.Monitor.Log("Launching mods...", LogLevel.Debug);
             foreach (IModMetadata metadata in loadedMods)
             {
-#if SMAPI_DEPRECATED
-                // add interceptors
-                if (metadata.Mod?.Helper is ModHelper helper)
-                {
-                    // ReSharper disable SuspiciousTypeConversion.Global
-                    if (metadata.Mod is IAssetEditor editor)
-                    {
-                        SCore.DeprecationManager.Warn(
-                            source: metadata,
-                            nounPhrase: $"{nameof(IAssetEditor)}",
-                            version: "3.14.0",
-                            severity: DeprecationLevel.Info,
-                            logStackTrace: false
-                        );
-
-                        this.ContentCore.Editors.Add(new ModLinked<IAssetEditor>(metadata, editor));
-                    }
-
-                    if (metadata.Mod is IAssetLoader loader)
-                    {
-                        SCore.DeprecationManager.Warn(
-                            source: metadata,
-                            nounPhrase: $"{nameof(IAssetLoader)}",
-                            version: "3.14.0",
-                            severity: DeprecationLevel.Info,
-                            logStackTrace: false
-                        );
-
-                        this.ContentCore.Loaders.Add(new ModLinked<IAssetLoader>(metadata, loader));
-                    }
-                    // ReSharper restore SuspiciousTypeConversion.Global
-
-                    ContentHelper content = helper.GetLegacyContentHelper();
-                    content.ObservableAssetEditors.CollectionChanged += (_, e) => this.OnAssetInterceptorsChanged(metadata, e.NewItems?.Cast<IAssetEditor>(), e.OldItems?.Cast<IAssetEditor>(), this.ContentCore.Editors);
-                    content.ObservableAssetLoaders.CollectionChanged += (_, e) => this.OnAssetInterceptorsChanged(metadata, e.NewItems?.Cast<IAssetLoader>(), e.OldItems?.Cast<IAssetLoader>(), this.ContentCore.Loaders);
-                }
-
-                // log deprecation warnings
-                if (metadata.HasWarnings(ModWarning.DetectedLegacyCachingDll, ModWarning.DetectedLegacyConfigurationDll, ModWarning.DetectedLegacyPermissionsDll))
-                {
-                    string?[] referenced =
-                        new[]
-                        {
-                            metadata.Warnings.HasFlag(ModWarning.DetectedLegacyConfigurationDll) ? "System.Configuration.ConfigurationManager" : null,
-                            metadata.Warnings.HasFlag(ModWarning.DetectedLegacyCachingDll) ? "System.Runtime.Caching" : null,
-                            metadata.Warnings.HasFlag(ModWarning.DetectedLegacyPermissionsDll) ? "System.Security.Permissions" : null
-                        }
-                        .Where(p => p is not null)
-                        .ToArray();
-
-                    foreach (string? name in referenced)
-                    {
-                        DeprecationManager.Warn(
-                            metadata,
-                            $"using {name} without bundling it",
-                            "3.14.7",
-                            DeprecationLevel.Info,
-                            logStackTrace: false
-                        );
-                    }
-                }
-#endif
-
                 // call entry method
                 Context.HeuristicModsRunningCode.Push(metadata);
                 try
@@ -1760,31 +1654,6 @@ namespace StardewModdingAPI.Framework
 
             this.Monitor.Log("Mods loaded and ready!", LogLevel.Debug);
         }
-
-#if SMAPI_DEPRECATED
-        /// <summary>Raised after a mod adds or removes asset interceptors.</summary>
-        /// <typeparam name="T">The asset interceptor type (one of <see cref="IAssetEditor"/> or <see cref="IAssetLoader"/>).</typeparam>
-        /// <param name="mod">The mod metadata.</param>
-        /// <param name="added">The interceptors that were added.</param>
-        /// <param name="removed">The interceptors that were removed.</param>
-        /// <param name="list">A list of interceptors to update for the change.</param>
-        private void OnAssetInterceptorsChanged<T>(IModMetadata mod, IEnumerable<T>? added, IEnumerable<T>? removed, IList<ModLinked<T>> list)
-            where T : notnull
-        {
-            foreach (T interceptor in added ?? Array.Empty<T>())
-            {
-                this.ReloadAssetInterceptorsQueue.Add(new AssetInterceptorChange(mod, interceptor, wasAdded: true));
-                list.Add(new ModLinked<T>(mod, interceptor));
-            }
-
-            foreach (T interceptor in removed ?? Array.Empty<T>())
-            {
-                this.ReloadAssetInterceptorsQueue.Add(new AssetInterceptorChange(mod, interceptor, wasAdded: false));
-                foreach (ModLinked<T> entry in list.Where(p => p.Mod == mod && object.ReferenceEquals(p.Data, interceptor)).ToArray())
-                    list.Remove(entry);
-            }
-        }
-#endif
 
         /// <summary>Load a given mod.</summary>
         /// <param name="mod">The mod to load.</param>
@@ -1928,9 +1797,6 @@ namespace StardewModdingAPI.Framework
                     {
                         IModEvents events = new ModEvents(mod, this.EventManager);
                         ICommandHelper commandHelper = new CommandHelper(mod, this.CommandManager);
-#if SMAPI_DEPRECATED
-                        ContentHelper contentHelper = new(contentCore, mod.DirectoryPath, mod, monitor, this.Reflection);
-#endif
                         GameContentHelper gameContentHelper = new(contentCore, mod, mod.DisplayName, monitor, this.Reflection);
                         IModContentHelper modContentHelper = new ModContentHelper(contentCore, mod.DirectoryPath, mod, mod.DisplayName, gameContentHelper.GetUnderlyingContentManager(), this.Reflection);
                         IContentPackHelper contentPackHelper = new ContentPackHelper(
@@ -1943,11 +1809,7 @@ namespace StardewModdingAPI.Framework
                         IModRegistry modRegistryHelper = new ModRegistryHelper(mod, this.ModRegistry, proxyFactory, monitor);
                         IMultiplayerHelper multiplayerHelper = new MultiplayerHelper(mod, this.Multiplayer);
 
-                        modHelper = new ModHelper(mod, mod.DirectoryPath, () => this.GetCurrentGameInstance().Input, events,
-#if SMAPI_DEPRECATED
-                            contentHelper,
-#endif
-                            gameContentHelper, modContentHelper, contentPackHelper, commandHelper, dataHelper, modRegistryHelper, reflectionHelper, multiplayerHelper, translationHelper);
+                        modHelper = new ModHelper(mod, mod.DirectoryPath, () => this.GetCurrentGameInstance().Input, events, gameContentHelper, modContentHelper, contentPackHelper, commandHelper, dataHelper, modRegistryHelper, reflectionHelper, multiplayerHelper, translationHelper);
                     }
 
                     // init mod
