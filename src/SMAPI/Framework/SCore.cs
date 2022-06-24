@@ -197,7 +197,6 @@ namespace StardewModdingAPI.Framework
                 this.Game = new SGameRunner(
                     monitor: this.Monitor,
                     reflection: this.Reflection,
-                    modHooks: new SModHooks(this.OnNewDayAfterFade, this.Monitor),
                     exitGameImmediately: this.ExitGameImmediately,
 
                     onGameContentLoaded: this.OnInstanceContentLoaded,
