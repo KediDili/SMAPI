@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
@@ -22,9 +21,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>Raised after the game finishes loading its initial content.</summary>
         private readonly Action OnGameContentLoaded;
 
-        /// <summary>Raised when the game instance for a local split-screen player is updating (once per <see cref="OnGameUpdating"/> per player).</summary>
-        private readonly Action<SGame, GameTime, Action> OnPlayerInstanceUpdating;
-
         /// <summary>Raised before the game exits.</summary>
         private readonly Action OnGameExiting;
 
@@ -43,9 +39,8 @@ namespace StardewModdingAPI.Framework
         /// <param name="monitor">Encapsulates monitoring and logging for SMAPI.</param>
         /// <param name="exitGameImmediately">Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</param>
         /// <param name="onGameContentLoaded">Raised after the game finishes loading its initial content.</param>
-        /// <param name="onPlayerInstanceUpdating">Raised when the game instance for a local split-screen player is updating (once per <see cref="OnGameUpdating"/> per player).</param>
         /// <param name="onGameExiting">Raised before the game exits.</param>
-        public SGameRunner(Monitor monitor, Action<string> exitGameImmediately, Action onGameContentLoaded, Action<SGame, GameTime, Action> onPlayerInstanceUpdating, Action onGameExiting)
+        public SGameRunner(Monitor monitor, Action<string> exitGameImmediately, Action onGameContentLoaded, Action onGameExiting)
         {
             // init XNA
             Game1.graphics.GraphicsProfile = GraphicsProfile.HiDef;
@@ -54,7 +49,6 @@ namespace StardewModdingAPI.Framework
             this.Monitor = monitor;
             this.ExitGameImmediately = exitGameImmediately;
             this.OnGameContentLoaded = onGameContentLoaded;
-            this.OnPlayerInstanceUpdating = onPlayerInstanceUpdating;
             this.OnGameExiting = onGameExiting;
         }
 
@@ -63,7 +57,7 @@ namespace StardewModdingAPI.Framework
         /// <param name="instanceIndex">The instance index.</param>
         public override Game1 CreateGameInstance(PlayerIndex playerIndex = PlayerIndex.One, int instanceIndex = 0)
         {
-            return new SGame(playerIndex, instanceIndex, this.Monitor, this.ExitGameImmediately, this.OnPlayerInstanceUpdating, this.OnGameContentLoaded);
+            return new SGame(playerIndex, instanceIndex, this.Monitor, this.ExitGameImmediately, this.OnGameContentLoaded);
         }
 
         /// <inheritdoc />
@@ -83,15 +77,6 @@ namespace StardewModdingAPI.Framework
             if (this.gameInstances.Count <= 1)
                 EarlyConstants.LogScreenId = null;
             this.UpdateForSplitScreenChanges();
-        }
-
-        /// <summary>Get the screen ID for a given player ID, if the player is local.</summary>
-        /// <param name="playerId">The player ID to check.</param>
-        public int? GetScreenId(long playerId)
-        {
-            return this.gameInstances
-                .FirstOrDefault(p => ((SGame)p).PlayerId == playerId)
-                ?.instanceId;
         }
 
 

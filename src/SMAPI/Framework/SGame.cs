@@ -24,31 +24,8 @@ namespace StardewModdingAPI.Framework
         /// <summary>Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</summary>
         private readonly Action<string> ExitGameImmediately;
 
-        /// <summary>Raised when the instance is updating its state (roughly 60 times per second).</summary>
-        private readonly Action<SGame, GameTime, Action> OnUpdating;
-
         /// <summary>Raised after the instance finishes loading its initial content.</summary>
         private readonly Action OnContentLoaded;
-
-
-        /*********
-        ** Accessors
-        *********/
-        /// <summary>Whether the current update tick is the first one for this instance.</summary>
-        public bool IsFirstTick = true;
-
-        /// <summary>The number of ticks until SMAPI should notify mods that the game has loaded.</summary>
-        /// <remarks>Skipping a few frames ensures the game finishes initializing the world before mods try to change it.</remarks>
-        public Countdown AfterLoadTimer { get; } = new(5);
-
-        /// <summary>Whether the game is saving and SMAPI has already raised <see cref="IGameLoopEvents.Saving"/>.</summary>
-        public bool IsBetweenSaveEvents { get; set; }
-
-        /// <summary>Whether the game is creating the save file and SMAPI has already raised <see cref="IGameLoopEvents.SaveCreating"/>.</summary>
-        public bool IsBetweenCreateEvents { get; set; }
-
-        /// <summary>The cached <see cref="Farmer.UniqueMultiplayerID"/> value for this instance's player.</summary>
-        public long? PlayerId { get; private set; }
 
 
         /*********
@@ -59,9 +36,8 @@ namespace StardewModdingAPI.Framework
         /// <param name="instanceIndex">The instance index.</param>
         /// <param name="monitor">Encapsulates monitoring and logging for SMAPI.</param>
         /// <param name="exitGameImmediately">Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</param>
-        /// <param name="onUpdating">Raised when the instance is updating its state (roughly 60 times per second).</param>
         /// <param name="onContentLoaded">Raised after the game finishes loading its initial content.</param>
-        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Action<string> exitGameImmediately, Action<SGame, GameTime, Action> onUpdating, Action onContentLoaded)
+        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Action<string> exitGameImmediately, Action onContentLoaded)
             : base(playerIndex, instanceIndex)
         {
             // init XNA
@@ -73,7 +49,6 @@ namespace StardewModdingAPI.Framework
             // init SMAPI
             this.Monitor = monitor;
             this.ExitGameImmediately = exitGameImmediately;
-            this.OnUpdating = onUpdating;
             this.OnContentLoaded = onContentLoaded;
         }
 
@@ -88,22 +63,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Protected methods
         *********/
-        /// <summary>The method called when the instance is updating its state (roughly 60 times per second).</summary>
-        /// <param name="gameTime">A snapshot of the game timing state.</param>
-        protected override void Update(GameTime gameTime)
-        {
-            // update
-            try
-            {
-                this.OnUpdating(this, gameTime, () => base.Update(gameTime));
-                this.PlayerId = Game1.player?.UniqueMultiplayerID;
-            }
-            finally
-            {
-                this.IsFirstTick = false;
-            }
-        }
-
         /// <summary>The method called to draw everything to the screen.</summary>
         /// <param name="gameTime">A snapshot of the game timing state.</param>
         /// <param name="target_screen">The render target, if any.</param>

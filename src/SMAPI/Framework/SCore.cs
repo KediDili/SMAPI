@@ -7,12 +7,9 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
 #if SMAPI_FOR_WINDOWS
 #endif
 using Newtonsoft.Json;
-using StardewModdingAPI.Enums;
 using StardewModdingAPI.Framework.Logging;
 using StardewModdingAPI.Framework.Models;
 using StardewModdingAPI.Framework.Serialization;
@@ -160,7 +157,6 @@ namespace StardewModdingAPI.Framework
                     exitGameImmediately: this.ExitGameImmediately,
 
                     onGameContentLoaded: this.OnInstanceContentLoaded,
-                    onPlayerInstanceUpdating: this.OnPlayerInstanceUpdating,
                     onGameExiting: this.OnGameExiting
                 );
                 StardewValley.GameRunner.instance = this.Game;
@@ -260,172 +256,6 @@ namespace StardewModdingAPI.Framework
 #if SMAPI_FOR_WINDOWS
             this.Monitor.Log($"Running on GPU: {Game1.game1.GraphicsDevice?.Adapter?.Description ?? "<unknown>"}");
 #endif
-        }
-
-        /// <summary>Raised when the game instance for a local player is updating (once per <see cref="OnGameUpdating"/> per player).</summary>
-        /// <param name="instance">The game instance being updated.</param>
-        /// <param name="gameTime">A snapshot of the game timing state.</param>
-        /// <param name="runUpdate">Invoke the game's update logic.</param>
-        private void OnPlayerInstanceUpdating(SGame instance, GameTime gameTime, Action runUpdate)
-        {
-            try
-            {
-                /*********
-                ** Special cases
-                *********/
-                // While a background task is in progress, the game may make changes to the game
-                // state while mods are running their code. This is risky, because data changes can
-                // conflict (e.g. collection changed during enumeration errors) and data may change
-                // unexpectedly from one mod instruction to the next.
-                //
-                // Therefore we can just run Game1.Update here without raising any SMAPI events. There's
-                // a small chance that the task will finish after we defer but before the game checks,
-                // which means technically events should be raised, but the effects of missing one
-                // update tick are negligible and not worth the complications of bypassing Game1.Update.
-                if (Game1.currentLoader != null || Game1.gameMode == Game1.loadingMode)
-                {
-                    runUpdate();
-                    return;
-                }
-
-                // Raise minimal events while saving.
-                // While the game is writing to the save file in the background, mods can unexpectedly
-                // fail since they don't have exclusive access to resources (e.g. collection changed
-                // during enumeration errors). To avoid problems, events are not invoked while a save
-                // is in progress. It's safe to raise SaveEvents.BeforeSave as soon as the menu is
-                // opened (since the save hasn't started yet), but all other events should be suppressed.
-                if (Context.IsSaving)
-                {
-                    // raise before-create
-                    if (!Context.IsWorldReady && !instance.IsBetweenCreateEvents)
-                    {
-                        instance.IsBetweenCreateEvents = true;
-                    }
-
-                    // raise before-save
-                    if (Context.IsWorldReady && !instance.IsBetweenSaveEvents)
-                    {
-                        instance.IsBetweenSaveEvents = true;
-                    }
-
-                    // suppress non-save events
-                    runUpdate();
-                    return;
-                }
-
-                /*********
-                ** Update context
-                *********/
-                bool wasWorldReady = Context.IsWorldReady;
-                if ((Context.IsWorldReady && !Context.IsSaveLoaded) || Game1.exitToTitle)
-                {
-                    Context.IsWorldReady = false;
-                    instance.AfterLoadTimer.Reset();
-                }
-                else if (Context.IsSaveLoaded && instance.AfterLoadTimer.Current > 0 && Game1.currentLocation != null)
-                {
-                    if (Game1.dayOfMonth != 0) // wait until new-game intro finishes (world not fully initialized yet)
-                        instance.AfterLoadTimer.Decrement();
-                    Context.IsWorldReady = instance.AfterLoadTimer.Current == 0;
-                }
-
-                /*********
-                ** Pre-update events
-                *********/
-                {
-                    /*********
-                    ** Save created/loaded events
-                    *********/
-                    if (instance.IsBetweenCreateEvents)
-                    {
-                        // raise after-create
-                        instance.IsBetweenCreateEvents = false;
-                        this.Monitor.Log($"Context: after save creation, starting {Game1.currentSeason} {Game1.dayOfMonth} Y{Game1.year}.");
-                        this.OnLoadStageChanged(LoadStage.CreatedSaveFile);
-                    }
-
-                    if (instance.IsBetweenSaveEvents)
-                    {
-                        // raise after-save
-                        instance.IsBetweenSaveEvents = false;
-                        this.Monitor.Log($"Context: after save, starting {Game1.currentSeason} {Game1.dayOfMonth} Y{Game1.year}.");
-                    }
-
-                    /*********
-                    ** Load / return-to-title events
-                    *********/
-                    if (wasWorldReady && !Context.IsWorldReady)
-                        this.OnLoadStageChanged(LoadStage.None);
-                    else if (Context.IsWorldReady && Context.LoadStage != LoadStage.Ready)
-                    {
-                        // print context
-                        string context = $"Context: loaded save '{Constants.SaveFolderName}', starting {Game1.currentSeason} {Game1.dayOfMonth} Y{Game1.year}.";
-                        if (Context.IsMultiplayer)
-                        {
-                            int onlineCount = Game1.getOnlineFarmers().Count();
-                            context += $" {(Context.IsMainPlayer ? "Main player" : "Farmhand")} with {onlineCount} {(onlineCount == 1 ? "player" : "players")} online.";
-                        }
-                        else
-                            context += " Single-player.";
-
-                        this.Monitor.Log(context);
-
-                        // raise events
-                        this.OnLoadStageChanged(LoadStage.Ready);
-                    }
-
-
-                    /*********
-                    ** Game update
-                    *********/
-                    // game launched (not raised for secondary players in split-screen mode)
-                    if (instance.IsFirstTick && !Context.IsGameLaunched)
-                        Context.IsGameLaunched = true;
-
-                    // preloaded
-                    if (Context.IsSaveLoaded && Context.LoadStage != LoadStage.Loaded && Context.LoadStage != LoadStage.Ready && Game1.dayOfMonth != 0)
-                        this.OnLoadStageChanged(LoadStage.Loaded);
-                }
-
-                /*********
-                ** Game update tick
-                *********/
-                try
-                {
-                    runUpdate();
-                }
-                catch (Exception ex)
-                {
-                    this.LogManager.MonitorForGame.Log($"An error occurred in the base update loop: {ex.GetLogSummary()}", LogLevel.Error);
-                }
-
-                /*********
-                ** Update events
-                *********/
-                this.UpdateCrashTimer.Reset();
-            }
-            catch (Exception ex)
-            {
-                // log error
-                this.Monitor.Log($"An error occurred in the overridden update loop: {ex.GetLogSummary()}", LogLevel.Error);
-
-                // exit if irrecoverable
-                if (!this.UpdateCrashTimer.Decrement())
-                    this.ExitGameImmediately("The game crashed when updating, and SMAPI was unable to recover the game.");
-            }
-        }
-
-        /// <summary>Raised when the low-level stage while loading a save changes.</summary>
-        /// <param name="newStage">The new load stage.</param>
-        internal void OnLoadStageChanged(LoadStage newStage)
-        {
-            // nothing to do
-            if (newStage == Context.LoadStage)
-                return;
-
-            // update data
-            Context.LoadStage = newStage;
-            this.Monitor.VerboseLog($"Context: load stage changed to {newStage}");
         }
 
         /// <summary>Raised before the game exits.</summary>
