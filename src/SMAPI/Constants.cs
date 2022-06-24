@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Mono.Cecil;
 using StardewModdingAPI.Enums;
 using StardewModdingAPI.Framework;
-using StardewModdingAPI.Framework.ModLoading;
 using StardewModdingAPI.Toolkit.Framework;
 using StardewModdingAPI.Toolkit.Utilities;
 using StardewValley;
@@ -215,63 +212,6 @@ namespace StardewModdingAPI
                 default:
                     return null;
             }
-        }
-
-        /// <summary>Configure the Mono.Cecil assembly resolver.</summary>
-        /// <param name="resolver">The assembly resolver.</param>
-        internal static void ConfigureAssemblyResolver(AssemblyDefinitionResolver resolver)
-        {
-            // add search paths
-            resolver.TryAddSearchDirectory(Constants.GamePath);
-            resolver.TryAddSearchDirectory(Constants.InternalFilesPath);
-
-            // add SMAPI explicitly
-            // Normally this would be handled automatically by the search paths, but for some reason there's a specific
-            // case involving unofficial 64-bit Stardew Valley when launched through Steam (for some players only)
-            // where Mono.Cecil can't resolve references to SMAPI.
-            resolver.Add(AssemblyDefinition.ReadAssembly(typeof(SGame).Assembly.Location));
-
-            // make sure game assembly names can be resolved
-            // The game assembly can have one of three names depending how the mod was compiled:
-            //   - 'StardewValley': assembly name on Linux/macOS;
-            //   - 'Stardew Valley': assembly name on Windows;
-            //   - 'Netcode': an assembly that was separate on Windows only before Stardew Valley 1.5.5.
-            resolver.AddWithExplicitNames(AssemblyDefinition.ReadAssembly(typeof(Game1).Assembly.Location), "StardewValley", "Stardew Valley", "Netcode");
-        }
-
-        /// <summary>Get metadata for mapping assemblies to the current platform.</summary>
-        /// <param name="targetPlatform">The target game platform.</param>
-        internal static PlatformAssemblyMap GetAssemblyMap(Platform targetPlatform)
-        {
-            var removeAssemblyReferences = new List<string>();
-            var targetAssemblies = new List<Assembly>();
-
-            // get assembly renamed in SMAPI 3.0
-            removeAssemblyReferences.Add("StardewModdingAPI.Toolkit.CoreInterfaces");
-            targetAssemblies.Add(typeof(StardewModdingAPI.IManifest).Assembly);
-
-            // XNA Framework before Stardew Valley 1.5.5
-            removeAssemblyReferences.AddRange(new[]
-            {
-                "Microsoft.Xna.Framework",
-                "Microsoft.Xna.Framework.Game",
-                "Microsoft.Xna.Framework.Graphics",
-                "Microsoft.Xna.Framework.Xact"
-            });
-            targetAssemblies.Add(
-                typeof(Microsoft.Xna.Framework.Vector2).Assembly
-            );
-
-            // `Netcode.dll` merged into the game assembly in Stardew Valley 1.5.5
-            removeAssemblyReferences.Add(
-                "Netcode"
-            );
-
-            // Stardew Valley reference
-            removeAssemblyReferences.Add("StardewValley");
-            targetAssemblies.Add(typeof(StardewValley.Game1).Assembly);
-
-            return new PlatformAssemblyMap(targetPlatform, removeAssemblyReferences.ToArray(), targetAssemblies.ToArray());
         }
 
 
