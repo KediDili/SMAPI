@@ -26,9 +26,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>The core SMAPI mod hooks.</summary>
         private readonly SModHooks ModHooks;
 
-        /// <summary>The core multiplayer logic.</summary>
-        private readonly SMultiplayer Multiplayer;
-
         /// <summary>Raised after the game finishes loading its initial content.</summary>
         private readonly Action OnGameContentLoaded;
 
@@ -56,13 +53,12 @@ namespace StardewModdingAPI.Framework
         /// <param name="monitor">Encapsulates monitoring and logging for SMAPI.</param>
         /// <param name="reflection">Simplifies access to private game code.</param>
         /// <param name="modHooks">Handles mod hooks provided by the game.</param>
-        /// <param name="multiplayer">The core multiplayer logic.</param>
         /// <param name="exitGameImmediately">Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</param>
         /// <param name="onGameContentLoaded">Raised after the game finishes loading its initial content.</param>
         /// <param name="onGameUpdating">Raised when XNA is updating its state (roughly 60 times per second).</param>
         /// <param name="onPlayerInstanceUpdating">Raised when the game instance for a local split-screen player is updating (once per <see cref="OnGameUpdating"/> per player).</param>
         /// <param name="onGameExiting">Raised before the game exits.</param>
-        public SGameRunner(Monitor monitor, Reflector reflection, SModHooks modHooks, SMultiplayer multiplayer, Action<string> exitGameImmediately, Action onGameContentLoaded, Action<GameTime, Action> onGameUpdating, Action<SGame, GameTime, Action> onPlayerInstanceUpdating, Action onGameExiting)
+        public SGameRunner(Monitor monitor, Reflector reflection, SModHooks modHooks, Action<string> exitGameImmediately, Action onGameContentLoaded, Action<GameTime, Action> onGameUpdating, Action<SGame, GameTime, Action> onPlayerInstanceUpdating, Action onGameExiting)
         {
             // init XNA
             Game1.graphics.GraphicsProfile = GraphicsProfile.HiDef;
@@ -73,7 +69,6 @@ namespace StardewModdingAPI.Framework
             // init SMAPI
             this.Monitor = monitor;
             this.Reflection = reflection;
-            this.Multiplayer = multiplayer;
             this.ExitGameImmediately = exitGameImmediately;
             this.OnGameContentLoaded = onGameContentLoaded;
             this.OnGameUpdating = onGameUpdating;
@@ -86,7 +81,7 @@ namespace StardewModdingAPI.Framework
         /// <param name="instanceIndex">The instance index.</param>
         public override Game1 CreateGameInstance(PlayerIndex playerIndex = PlayerIndex.One, int instanceIndex = 0)
         {
-            return new SGame(playerIndex, instanceIndex, this.Monitor, this.Reflection, this.ModHooks, this.Multiplayer, this.ExitGameImmediately, this.OnPlayerInstanceUpdating, this.OnGameContentLoaded);
+            return new SGame(playerIndex, instanceIndex, this.Monitor, this.Reflection, this.ModHooks, this.ExitGameImmediately, this.OnPlayerInstanceUpdating, this.OnGameContentLoaded);
         }
 
         /// <inheritdoc />

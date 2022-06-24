@@ -28,9 +28,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</summary>
         private readonly Action<string> ExitGameImmediately;
 
-        /// <summary>The initial override for <see cref="Multiplayer"/>. This value is null after initialization.</summary>
-        private SMultiplayer? InitialMultiplayer;
-
         /// <summary>Raised when the instance is updating its state (roughly 60 times per second).</summary>
         private readonly Action<SGame, GameTime, Action> OnUpdating;
 
@@ -66,20 +63,17 @@ namespace StardewModdingAPI.Framework
         /// <param name="instanceIndex">The instance index.</param>
         /// <param name="monitor">Encapsulates monitoring and logging for SMAPI.</param>
         /// <param name="reflection">Simplifies access to private game code.</param>
-        /// <param name="input">Manages the game's input state.</param>
         /// <param name="modHooks">Handles mod hooks provided by the game.</param>
-        /// <param name="multiplayer">The core multiplayer logic.</param>
         /// <param name="exitGameImmediately">Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</param>
         /// <param name="onUpdating">Raised when the instance is updating its state (roughly 60 times per second).</param>
         /// <param name="onContentLoaded">Raised after the game finishes loading its initial content.</param>
-        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Reflector reflection, SModHooks modHooks, SMultiplayer multiplayer, Action<string> exitGameImmediately, Action<SGame, GameTime, Action> onUpdating, Action onContentLoaded)
+        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Reflector reflection, SModHooks modHooks, Action<string> exitGameImmediately, Action<SGame, GameTime, Action> onUpdating, Action onContentLoaded)
             : base(playerIndex, instanceIndex)
         {
             // init XNA
             Game1.graphics.GraphicsProfile = GraphicsProfile.HiDef;
 
             // hook into game
-            Game1.multiplayer = this.InitialMultiplayer = multiplayer;
             Game1.hooks = modHooks;
             this._locations = new ObservableCollection<GameLocation>();
 
@@ -102,18 +96,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Protected methods
         *********/
-        /// <summary>Initialize the instance when the game starts.</summary>
-        protected override void Initialize()
-        {
-            base.Initialize();
-
-            // The game resets public static fields after the class is constructed (see GameRunner.SetInstanceDefaults), so SMAPI needs to re-override them here.
-            Game1.multiplayer = this.InitialMultiplayer;
-
-            // The Initial* fields should no longer be used after this point, since mods may further override them after initialization.
-            this.InitialMultiplayer = null;
-        }
-
         /// <summary>The method called when the instance is updating its state (roughly 60 times per second).</summary>
         /// <param name="gameTime">A snapshot of the game timing state.</param>
         protected override void Update(GameTime gameTime)
