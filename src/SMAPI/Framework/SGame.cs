@@ -1,10 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using StardewModdingAPI.Framework.Utilities;
-using StardewModdingAPI.Internal;
 using StardewValley;
 
 namespace StardewModdingAPI.Framework
@@ -15,15 +12,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Fields
         *********/
-        /// <summary>Encapsulates monitoring and logging for SMAPI.</summary>
-        private readonly Monitor Monitor;
-
-        /// <summary>The maximum number of consecutive attempts SMAPI should make to recover from a draw error.</summary>
-        private readonly Countdown DrawCrashTimer = new(60); // 60 ticks = roughly one second
-
-        /// <summary>Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</summary>
-        private readonly Action<string> ExitGameImmediately;
-
         /// <summary>Raised after the instance finishes loading its initial content.</summary>
         private readonly Action OnContentLoaded;
 
@@ -34,10 +22,8 @@ namespace StardewModdingAPI.Framework
         /// <summary>Construct an instance.</summary>
         /// <param name="playerIndex">The player index.</param>
         /// <param name="instanceIndex">The instance index.</param>
-        /// <param name="monitor">Encapsulates monitoring and logging for SMAPI.</param>
-        /// <param name="exitGameImmediately">Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</param>
         /// <param name="onContentLoaded">Raised after the game finishes loading its initial content.</param>
-        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Action<string> exitGameImmediately, Action onContentLoaded)
+        public SGame(PlayerIndex playerIndex, int instanceIndex, Action onContentLoaded)
             : base(playerIndex, instanceIndex)
         {
             // init XNA
@@ -47,8 +33,6 @@ namespace StardewModdingAPI.Framework
             this._locations = new ObservableCollection<GameLocation>();
 
             // init SMAPI
-            this.Monitor = monitor;
-            this.ExitGameImmediately = exitGameImmediately;
             this.OnContentLoaded = onContentLoaded;
         }
 
@@ -58,54 +42,6 @@ namespace StardewModdingAPI.Framework
             base.LoadContent();
 
             this.OnContentLoaded();
-        }
-
-        /*********
-        ** Protected methods
-        *********/
-        /// <summary>The method called to draw everything to the screen.</summary>
-        /// <param name="gameTime">A snapshot of the game timing state.</param>
-        /// <param name="target_screen">The render target, if any.</param>
-        [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "copied from game code as-is")]
-        protected override void _draw(GameTime gameTime, RenderTarget2D target_screen)
-        {
-            Context.IsInDrawLoop = true;
-            try
-            {
-                base._draw(gameTime, target_screen);
-                this.DrawCrashTimer.Reset();
-            }
-            catch (Exception ex)
-            {
-                // log error
-                this.Monitor.Log($"An error occurred in the overridden draw loop: {ex.GetLogSummary()}", LogLevel.Error);
-
-                // exit if irrecoverable
-                if (!this.DrawCrashTimer.Decrement())
-                {
-                    this.ExitGameImmediately("The game crashed when drawing, and SMAPI was unable to recover the game.");
-                    return;
-                }
-
-                // recover draw state
-                try
-                {
-                    if (Game1.spriteBatch.IsOpen())
-                    {
-                        this.Monitor.Log("Recovering sprite batch from error...");
-                        Game1.spriteBatch.End();
-                    }
-
-                    Game1.uiMode = false;
-                    Game1.uiModeCount = 0;
-                    Game1.nonUIRenderTarget = null;
-                }
-                catch (Exception innerEx)
-                {
-                    this.Monitor.Log($"Could not recover game draw state: {innerEx.GetLogSummary()}", LogLevel.Error);
-                }
-            }
-            Context.IsInDrawLoop = false;
         }
     }
 }

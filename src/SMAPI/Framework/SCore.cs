@@ -153,9 +153,6 @@ namespace StardewModdingAPI.Framework
 
                 // override game
                 this.Game = new SGameRunner(
-                    monitor: this.Monitor,
-                    exitGameImmediately: this.ExitGameImmediately,
-
                     onGameContentLoaded: this.OnInstanceContentLoaded,
                     onGameExiting: this.OnGameExiting
                 );
@@ -425,17 +422,6 @@ namespace StardewModdingAPI.Framework
                     // ignore file if it's in use
                 }
             }
-        }
-
-        /// <summary>Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</summary>
-        /// <param name="message">The fatal log message.</param>
-        private void ExitGameImmediately(string message)
-        {
-            this.Monitor.LogFatal(message);
-            this.LogManager.WriteCrashLog();
-
-            this.IsExiting = true;
-            this.Game.Exit();
         }
 
         /// <summary>Get the screen ID that should be logged to distinguish between players in split-screen mode, if any.</summary>
