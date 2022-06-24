@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Graphics;
-using StardewModdingAPI.Events;
 using StardewModdingAPI.Framework.ModLoading;
 using StardewModdingAPI.Framework.ModLoading.Finders;
 using StardewModdingAPI.Framework.ModLoading.RewriteFacades;
@@ -68,7 +67,6 @@ namespace StardewModdingAPI.Metadata
             ** detect code which may impact game stability
             ****/
             yield return new FieldFinder(typeof(SaveGame).FullName!, new[] { nameof(SaveGame.serializer), nameof(SaveGame.farmerSerializer), nameof(SaveGame.locationSerializer) }, InstructionHandleResult.DetectedSaveSerializer);
-            yield return new EventFinder(typeof(ISpecializedEvents).FullName!, new[] { nameof(ISpecializedEvents.UnvalidatedUpdateTicked), nameof(ISpecializedEvents.UnvalidatedUpdateTicking) }, InstructionHandleResult.DetectedUnvalidatedUpdateTick);
 
             /****
             ** detect paranoid issues

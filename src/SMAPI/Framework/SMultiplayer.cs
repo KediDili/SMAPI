@@ -5,7 +5,6 @@ using System.Linq;
 using Galaxy.Api;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using StardewModdingAPI.Events;
 using StardewModdingAPI.Framework.Events;
 using StardewModdingAPI.Framework.Networking;
 using StardewModdingAPI.Framework.Reflection;
@@ -233,10 +232,6 @@ namespace StardewModdingAPI.Framework
                                 otherPeer.SendMessage(new OutgoingMessage((byte)MessageType.ModContext, newPeer.PlayerID, fields));
                             }
                         }
-
-                        // raise event
-                        if (this.EventManager.PeerContextReceived.HasListeners)
-                            this.EventManager.PeerContextReceived.Raise(new PeerContextReceivedEventArgs(newPeer));
                     }
                     break;
 
@@ -258,10 +253,6 @@ namespace StardewModdingAPI.Framework
 
                     // let game handle connection
                     resume();
-
-                    // raise event
-                    if (this.EventManager.PeerConnected.HasListeners)
-                        this.EventManager.PeerConnected.Raise(new PeerConnectedEventArgs(this.Peers[message.FarmerID]));
                     break;
 
                 // handle mod message
@@ -372,9 +363,6 @@ namespace StardewModdingAPI.Framework
                 {
                     this.Monitor.Log($"Player quit: {playerID}");
                     this.Peers.Remove(playerID);
-
-                    if (this.EventManager.PeerDisconnected.HasListeners)
-                        this.EventManager.PeerDisconnected.Raise(new PeerDisconnectedEventArgs(peer));
                 }
             }
 
@@ -483,10 +471,6 @@ namespace StardewModdingAPI.Framework
             this.Peers[peer.PlayerID] = peer;
             if (canBeHost && peer.IsHost)
                 this.HostPeer = peer;
-
-            // raise event
-            if (raiseEvent && this.EventManager.PeerContextReceived.HasListeners)
-                this.EventManager.PeerContextReceived.Raise(new PeerContextReceivedEventArgs(peer));
         }
 
         /// <summary>Read the metadata context for a player.</summary>

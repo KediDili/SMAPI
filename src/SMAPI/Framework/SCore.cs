@@ -32,7 +32,6 @@ using StardewModdingAPI.Framework.Networking;
 using StardewModdingAPI.Framework.Reflection;
 using StardewModdingAPI.Framework.Rendering;
 using StardewModdingAPI.Framework.Serialization;
-using StardewModdingAPI.Framework.StateTracking.Snapshots;
 using StardewModdingAPI.Framework.Utilities;
 using StardewModdingAPI.Internal;
 using StardewModdingAPI.Internal.Patching;
@@ -46,7 +45,6 @@ using StardewModdingAPI.Toolkit.Utilities.PathLookups;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Menus;
-using StardewValley.Objects;
 using xTile.Display;
 using LanguageCode = StardewValley.LocalizedContentManager.LanguageCode;
 using MiniMonoModHotfix = MonoMod.Utils.MiniMonoModHotfix;
@@ -246,7 +244,6 @@ namespace StardewModdingAPI.Framework
                 this.Game = new SGameRunner(
                     monitor: this.Monitor,
                     reflection: this.Reflection,
-                    eventManager: this.EventManager,
                     modHooks: new SModHooks(this.OnNewDayAfterFade, this.Monitor),
                     multiplayer: this.Multiplayer,
                     exitGameImmediately: this.ExitGameImmediately,
@@ -635,9 +632,7 @@ namespace StardewModdingAPI.Framework
                 // update tick are negligible and not worth the complications of bypassing Game1.Update.
                 if (Game1.gameMode == Game1.loadingMode)
                 {
-                    events.UnvalidatedUpdateTicking.RaiseEmpty();
                     runUpdate();
-                    events.UnvalidatedUpdateTicked.RaiseEmpty();
                     return;
                 }
 
@@ -653,22 +648,16 @@ namespace StardewModdingAPI.Framework
                     if (!Context.IsWorldReady && !instance.IsBetweenCreateEvents)
                     {
                         instance.IsBetweenCreateEvents = true;
-                        this.Monitor.Log("Context: before save creation.");
-                        events.SaveCreating.RaiseEmpty();
                     }
 
                     // raise before-save
                     if (Context.IsWorldReady && !instance.IsBetweenSaveEvents)
                     {
                         instance.IsBetweenSaveEvents = true;
-                        this.Monitor.Log("Context: before save.");
-                        events.Saving.RaiseEmpty();
                     }
 
                     // suppress non-save events
-                    events.UnvalidatedUpdateTicking.RaiseEmpty();
                     runUpdate();
-                    events.UnvalidatedUpdateTicked.RaiseEmpty();
                     return;
                 }
 
@@ -689,15 +678,6 @@ namespace StardewModdingAPI.Framework
                 }
 
                 /*********
-                ** Update watchers
-                **   (Watchers need to be updated, checked, and reset in one go so we can detect any changes mods make in event handlers.)
-                *********/
-                instance.Watchers.Update();
-                instance.WatcherSnapshot.Update(instance.Watchers);
-                instance.Watchers.Reset();
-                WatcherSnapshot state = instance.WatcherSnapshot;
-
-                /*********
                 ** Pre-update events
                 *********/
                 {
@@ -710,7 +690,6 @@ namespace StardewModdingAPI.Framework
                         instance.IsBetweenCreateEvents = false;
                         this.Monitor.Log($"Context: after save creation, starting {Game1.currentSeason} {Game1.dayOfMonth} Y{Game1.year}.");
                         this.OnLoadStageChanged(LoadStage.CreatedSaveFile);
-                        events.SaveCreated.RaiseEmpty();
                     }
 
                     if (instance.IsBetweenSaveEvents)
@@ -718,15 +697,7 @@ namespace StardewModdingAPI.Framework
                         // raise after-save
                         instance.IsBetweenSaveEvents = false;
                         this.Monitor.Log($"Context: after save, starting {Game1.currentSeason} {Game1.dayOfMonth} Y{Game1.year}.");
-                        events.Saved.RaiseEmpty();
-                        events.DayStarted.RaiseEmpty();
                     }
-
-                    /*********
-                    ** Locale changed events
-                    *********/
-                    if (state.Locale.IsChanged)
-                        this.Monitor.Log($"Context: locale set to {state.Locale.New} ({this.ContentCore.GetLocaleCode(state.Locale.New)}).");
 
                     /*********
                     ** Load / return-to-title events
@@ -749,241 +720,15 @@ namespace StardewModdingAPI.Framework
 
                         // raise events
                         this.OnLoadStageChanged(LoadStage.Ready);
-                        events.SaveLoaded.RaiseEmpty();
-                        events.DayStarted.RaiseEmpty();
                     }
 
-                    /*********
-                    ** Window events
-                    *********/
-                    // Here we depend on the game's viewport instead of listening to the Window.Resize
-                    // event because we need to notify mods after the game handles the resize, so the
-                    // game's metadata (like Game1.viewport) are updated. That's a bit complicated
-                    // since the game adds & removes its own handler on the fly.
-                    if (state.WindowSize.IsChanged)
-                    {
-                        if (verbose)
-                            this.Monitor.Log($"Events: window size changed to {state.WindowSize.New}.");
-
-                        if (events.WindowResized.HasListeners)
-                            events.WindowResized.Raise(new WindowResizedEventArgs(state.WindowSize.Old, state.WindowSize.New));
-                    }
-
-                    /*********
-                    ** Input events (if window has focus)
-                    *********/
-                    if (this.Game.IsActive)
-                    {
-                        // raise events
-                        bool isChatInput = Game1.IsChatting || (Context.IsMultiplayer && Context.IsWorldReady && Game1.activeClickableMenu == null && Game1.currentMinigame == null && inputState.IsAnyDown(Game1.options.chatButton));
-                        if (!isChatInput)
-                        {
-                            ICursorPosition cursor = instance.Input.CursorPosition;
-
-                            // raise cursor moved event
-                            if (state.Cursor.IsChanged && events.CursorMoved.HasListeners)
-                                events.CursorMoved.Raise(new CursorMovedEventArgs(state.Cursor.Old!, state.Cursor.New!));
-
-                            // raise mouse wheel scrolled
-                            if (state.MouseWheelScroll.IsChanged)
-                            {
-                                if (verbose)
-                                    this.Monitor.Log($"Events: mouse wheel scrolled to {state.MouseWheelScroll.New}.");
-
-                                if (events.MouseWheelScrolled.HasListeners)
-                                    events.MouseWheelScrolled.Raise(new MouseWheelScrolledEventArgs(cursor, state.MouseWheelScroll.Old, state.MouseWheelScroll.New));
-                            }
-
-                            // raise input button events
-                            if (inputState.ButtonStates.Count > 0)
-                            {
-                                if (events.ButtonsChanged.HasListeners)
-                                    events.ButtonsChanged.Raise(new ButtonsChangedEventArgs(cursor, inputState));
-
-                                bool raisePressed = events.ButtonPressed.HasListeners;
-                                bool raiseReleased = events.ButtonReleased.HasListeners;
-
-                                if (verbose || raisePressed || raiseReleased)
-                                {
-                                    foreach ((SButton button, SButtonState status) in inputState.ButtonStates)
-                                    {
-                                        switch (status)
-                                        {
-                                            case SButtonState.Pressed:
-                                                if (verbose)
-                                                    this.Monitor.Log($"Events: button {button} pressed.");
-
-                                                if (raisePressed)
-                                                    events.ButtonPressed.Raise(new ButtonPressedEventArgs(button, cursor, inputState));
-                                                break;
-
-                                            case SButtonState.Released:
-                                                if (verbose)
-                                                    this.Monitor.Log($"Events: button {button} released.");
-
-                                                if (raiseReleased)
-                                                    events.ButtonReleased.Raise(new ButtonReleasedEventArgs(button, cursor, inputState));
-                                                break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    /*********
-                    ** Menu events
-                    *********/
-                    if (state.ActiveMenu.IsChanged)
-                    {
-                        IClickableMenu? was = state.ActiveMenu.Old;
-                        IClickableMenu? now = state.ActiveMenu.New;
-
-                        if (verbose)
-                            this.Monitor.Log($"Context: menu changed from {was?.GetType().FullName ?? "none"} to {now?.GetType().FullName ?? "none"}.");
-
-                        // raise menu events
-                        if (events.MenuChanged.HasListeners)
-                            events.MenuChanged.Raise(new MenuChangedEventArgs(was, now));
-                    }
-
-                    /*********
-                    ** World & player events
-                    *********/
-                    if (Context.IsWorldReady)
-                    {
-                        bool raiseWorldEvents = !state.SaveID.IsChanged; // don't report changes from unloaded => loaded
-
-                        // location list changes
-                        if (state.Locations.LocationList.IsChanged && (events.LocationListChanged.HasListeners || verbose))
-                        {
-                            var added = state.Locations.LocationList.Added.ToArray();
-                            var removed = state.Locations.LocationList.Removed.ToArray();
-
-                            if (verbose)
-                            {
-                                string addedText = added.Any() ? string.Join(", ", added.Select(p => p.Name)) : "none";
-                                string removedText = removed.Any() ? string.Join(", ", removed.Select(p => p.Name)) : "none";
-                                this.Monitor.Log($"Context: location list changed (added {addedText}; removed {removedText}).");
-                            }
-
-                            if (events.LocationListChanged.HasListeners)
-                                events.LocationListChanged.Raise(new LocationListChangedEventArgs(added, removed));
-                        }
-
-                        // raise location contents changed
-                        if (raiseWorldEvents)
-                        {
-                            foreach (LocationSnapshot locState in state.Locations.Locations)
-                            {
-                                GameLocation location = locState.Location;
-
-                                // buildings changed
-                                if (locState.Buildings.IsChanged && events.BuildingListChanged.HasListeners)
-                                    events.BuildingListChanged.Raise(new BuildingListChangedEventArgs(location, locState.Buildings.Added, locState.Buildings.Removed));
-
-                                // debris changed
-                                if (locState.Debris.IsChanged && events.DebrisListChanged.HasListeners)
-                                    events.DebrisListChanged.Raise(new DebrisListChangedEventArgs(location, locState.Debris.Added, locState.Debris.Removed));
-
-                                // large terrain features changed
-                                if (locState.LargeTerrainFeatures.IsChanged && events.LargeTerrainFeatureListChanged.HasListeners)
-                                    events.LargeTerrainFeatureListChanged.Raise(new LargeTerrainFeatureListChangedEventArgs(location, locState.LargeTerrainFeatures.Added, locState.LargeTerrainFeatures.Removed));
-
-                                // NPCs changed
-                                if (locState.Npcs.IsChanged && events.NpcListChanged.HasListeners)
-                                    events.NpcListChanged.Raise(new NpcListChangedEventArgs(location, locState.Npcs.Added, locState.Npcs.Removed));
-
-                                // objects changed
-                                if (locState.Objects.IsChanged && events.ObjectListChanged.HasListeners)
-                                    events.ObjectListChanged.Raise(new ObjectListChangedEventArgs(location, locState.Objects.Added, locState.Objects.Removed));
-
-                                // chest items changed
-                                if (events.ChestInventoryChanged.HasListeners)
-                                {
-                                    foreach ((Chest chest, SnapshotItemListDiff diff) in locState.ChestItems)
-                                        events.ChestInventoryChanged.Raise(new ChestInventoryChangedEventArgs(chest, location, added: diff.Added, removed: diff.Removed, quantityChanged: diff.QuantityChanged));
-                                }
-
-                                // terrain features changed
-                                if (locState.TerrainFeatures.IsChanged && events.TerrainFeatureListChanged.HasListeners)
-                                    events.TerrainFeatureListChanged.Raise(new TerrainFeatureListChangedEventArgs(location, locState.TerrainFeatures.Added, locState.TerrainFeatures.Removed));
-
-                                // furniture changed
-                                if (locState.Furniture.IsChanged && events.FurnitureListChanged.HasListeners)
-                                    events.FurnitureListChanged.Raise(new FurnitureListChangedEventArgs(location, locState.Furniture.Added, locState.Furniture.Removed));
-                            }
-                        }
-
-                        // raise time changed
-                        if (raiseWorldEvents && state.Time.IsChanged)
-                        {
-                            if (verbose)
-                                this.Monitor.Log($"Context: time changed to {state.Time.New}.");
-
-                            if (events.TimeChanged.HasListeners)
-                                events.TimeChanged.Raise(new TimeChangedEventArgs(state.Time.Old, state.Time.New));
-                        }
-
-                        // raise player events
-                        if (raiseWorldEvents)
-                        {
-                            PlayerSnapshot playerState = state.CurrentPlayer!; // not null at this point
-                            Farmer player = playerState.Player;
-
-                            // raise current location changed
-                            if (playerState.Location.IsChanged)
-                            {
-                                if (verbose)
-                                    this.Monitor.Log($"Context: set location to {playerState.Location.New}.");
-
-                                if (events.Warped.HasListeners)
-                                    events.Warped.Raise(new WarpedEventArgs(player, playerState.Location.Old!, playerState.Location.New!));
-                            }
-
-                            // raise player leveled up a skill
-                            bool raiseLevelChanged = events.LevelChanged.HasListeners;
-                            if (verbose || raiseLevelChanged)
-                            {
-                                foreach ((SkillType skill, var value) in playerState.Skills)
-                                {
-                                    if (!value.IsChanged)
-                                        continue;
-
-                                    if (verbose)
-                                        this.Monitor.Log($"Events: player skill '{skill}' changed from {value.Old} to {value.New}.");
-
-                                    if (raiseLevelChanged)
-                                        events.LevelChanged.Raise(new LevelChangedEventArgs(player, skill, value.Old, value.New));
-                                }
-                            }
-
-                            // raise player inventory changed
-                            if (playerState.Inventory.IsChanged)
-                            {
-                                if (verbose)
-                                    this.Monitor.Log("Events: player inventory changed.");
-
-                                if (events.InventoryChanged.HasListeners)
-                                {
-                                    SnapshotItemListDiff inventory = playerState.Inventory;
-                                    events.InventoryChanged.Raise(new InventoryChangedEventArgs(player, added: inventory.Added, removed: inventory.Removed, quantityChanged: inventory.QuantityChanged));
-                                }
-                            }
-                        }
-                    }
 
                     /*********
                     ** Game update
                     *********/
                     // game launched (not raised for secondary players in split-screen mode)
                     if (instance.IsFirstTick && !Context.IsGameLaunched)
-                    {
                         Context.IsGameLaunched = true;
-
-                        if (events.GameLaunched.HasListeners)
-                            events.GameLaunched.Raise(new GameLaunchedEventArgs());
-                    }
 
                     // preloaded
                     if (Context.IsSaveLoaded && Context.LoadStage != LoadStage.Loaded && Context.LoadStage != LoadStage.Ready && Game1.dayOfMonth != 0)
@@ -1000,26 +745,14 @@ namespace StardewModdingAPI.Framework
                 /*********
                 ** Game update tick
                 *********/
+                try
                 {
-                    bool isOneSecond = SCore.TicksElapsed % 60 == 0;
-                    events.UnvalidatedUpdateTicking.RaiseEmpty();
-                    events.UpdateTicking.RaiseEmpty();
-                    if (isOneSecond)
-                        events.OneSecondUpdateTicking.RaiseEmpty();
-                    try
-                    {
-                        instance.Input.ApplyOverrides(); // if mods added any new overrides since the update, process them now
-                        runUpdate();
-                    }
-                    catch (Exception ex)
-                    {
-                        this.LogManager.MonitorForGame.Log($"An error occurred in the base update loop: {ex.GetLogSummary()}", LogLevel.Error);
-                    }
-
-                    events.UnvalidatedUpdateTicked.RaiseEmpty();
-                    events.UpdateTicked.RaiseEmpty();
-                    if (isOneSecond)
-                        events.OneSecondUpdateTicked.RaiseEmpty();
+                    instance.Input.ApplyOverrides(); // if mods added any new overrides since the update, process them now
+                    runUpdate();
+                }
+                catch (Exception ex)
+                {
+                    this.LogManager.MonitorForGame.Log($"An error occurred in the base update loop: {ex.GetLogSummary()}", LogLevel.Error);
                 }
 
                 /*********
@@ -1106,20 +839,11 @@ namespace StardewModdingAPI.Framework
                     Game1.onScreenMenus.Add(Game1.chatBox = new SChatBox(this.LogManager.MonitorForGame));
                     break;
             }
-
-            // raise events
-            EventManager events = this.EventManager;
-            if (events.LoadStageChanged.HasListeners)
-                events.LoadStageChanged.Raise(new LoadStageChangedEventArgs(oldStage, newStage));
-            if (newStage == LoadStage.None)
-                events.ReturnedToTitle.RaiseEmpty();
         }
 
         /// <summary>A callback invoked before <see cref="Game1.newDayAfterFade"/> runs.</summary>
         protected void OnNewDayAfterFade()
         {
-            this.EventManager.DayEnding.RaiseEmpty();
-
             this.Reflection.NewCacheInterval();
         }
 
@@ -1212,29 +936,7 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>Raised when a mod network message is received.</summary>
         /// <param name="message">The message to deliver to applicable mods.</param>
-        private void OnModMessageReceived(ModMessageModel message)
-        {
-            if (this.EventManager.ModMessageReceived.HasListeners)
-            {
-                // get mod IDs to notify
-                HashSet<string> modIDs = new(message.ToModIDs ?? this.ModRegistry.GetAll().Select(p => p.Manifest.UniqueID), StringComparer.OrdinalIgnoreCase);
-                if (message.FromPlayerID == Game1.player?.UniqueMultiplayerID)
-                    modIDs.Remove(message.FromModID); // don't send a broadcast back to the sender
-
-                // raise events
-                ModMessageReceivedEventArgs? args = null;
-                this.EventManager.ModMessageReceived.Raise(
-                    invoke: (mod, invoke) =>
-                    {
-                        if (modIDs.Contains(mod.Manifest.UniqueID))
-                        {
-                            args ??= new(message, this.Toolkit.JsonHelper);
-                            invoke(args);
-                        }
-                    }
-                );
-            }
-        }
+        private void OnModMessageReceived(ModMessageModel message) { }
 
         /// <summary>Constructor a content manager to read game content files.</summary>
         /// <param name="serviceProvider">The service provider to use to locate services.</param>
