@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using StardewModdingAPI.Framework.Input;
 using StardewModdingAPI.Framework.Reflection;
 using StardewValley;
 
@@ -87,8 +86,7 @@ namespace StardewModdingAPI.Framework
         /// <param name="instanceIndex">The instance index.</param>
         public override Game1 CreateGameInstance(PlayerIndex playerIndex = PlayerIndex.One, int instanceIndex = 0)
         {
-            SInputState inputState = new();
-            return new SGame(playerIndex, instanceIndex, this.Monitor, this.Reflection, inputState, this.ModHooks, this.Multiplayer, this.ExitGameImmediately, this.OnPlayerInstanceUpdating, this.OnGameContentLoaded);
+            return new SGame(playerIndex, instanceIndex, this.Monitor, this.Reflection, this.ModHooks, this.Multiplayer, this.ExitGameImmediately, this.OnPlayerInstanceUpdating, this.OnGameContentLoaded);
         }
 
         /// <inheritdoc />

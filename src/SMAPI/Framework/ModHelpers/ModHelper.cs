@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using StardewModdingAPI.Events;
-using StardewModdingAPI.Framework.Input;
 
 namespace StardewModdingAPI.Framework.ModHelpers
 {
@@ -30,9 +29,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
         public IDataHelper Data { get; }
 
         /// <inheritdoc />
-        public IInputHelper Input { get; }
-
-        /// <inheritdoc />
         public IReflectionHelper Reflection { get; }
 
         /// <inheritdoc />
@@ -54,7 +50,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
         /// <summary>Construct an instance.</summary>
         /// <param name="mod">The mod using this instance.</param>
         /// <param name="modDirectory">The full path to the mod's folder.</param>
-        /// <param name="currentInputState">Manages the game's input state for the current player instance. That may not be the main player in split-screen mode.</param>
         /// <param name="events">Manages access to events raised by SMAPI.</param>
         /// <param name="contentHelper">An API for loading content assets.</param>
         /// <param name="gameContentHelper">An API for loading content assets from the game's <c>Content</c> folder or via <see cref="IModEvents.Content"/>.</param>
@@ -69,7 +64,7 @@ namespace StardewModdingAPI.Framework.ModHelpers
         /// <exception cref="ArgumentNullException">An argument is null or empty.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="modDirectory"/> path does not exist on disk.</exception>
         public ModHelper(
-            IModMetadata mod, string modDirectory, Func<SInputState> currentInputState, IModEvents events, IGameContentHelper gameContentHelper, IModContentHelper modContentHelper, IContentPackHelper contentPackHelper, ICommandHelper commandHelper, IDataHelper dataHelper, IModRegistry modRegistry, IReflectionHelper reflectionHelper, IMultiplayerHelper multiplayer, ITranslationHelper translationHelper
+            IModMetadata mod, string modDirectory, IModEvents events, IGameContentHelper gameContentHelper, IModContentHelper modContentHelper, IContentPackHelper contentPackHelper, ICommandHelper commandHelper, IDataHelper dataHelper, IModRegistry modRegistry, IReflectionHelper reflectionHelper, IMultiplayerHelper multiplayer, ITranslationHelper translationHelper
         )
             : base(mod)
         {
@@ -85,7 +80,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
             this.ModContent = modContentHelper ?? throw new ArgumentNullException(nameof(modContentHelper));
             this.ContentPacks = contentPackHelper ?? throw new ArgumentNullException(nameof(contentPackHelper));
             this.Data = dataHelper ?? throw new ArgumentNullException(nameof(dataHelper));
-            this.Input = new InputHelper(mod, currentInputState);
             this.ModRegistry = modRegistry ?? throw new ArgumentNullException(nameof(modRegistry));
             this.ConsoleCommands = commandHelper ?? throw new ArgumentNullException(nameof(commandHelper));
             this.Reflection = reflectionHelper ?? throw new ArgumentNullException(nameof(reflectionHelper));

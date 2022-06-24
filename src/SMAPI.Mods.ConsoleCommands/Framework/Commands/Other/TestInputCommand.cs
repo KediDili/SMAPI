@@ -46,14 +46,5 @@ namespace StardewModdingAPI.Mods.ConsoleCommands.Framework.Commands.Other
                 return;
             }
         }
-
-        /// <summary>Perform any logic when input is received.</summary>
-        /// <param name="monitor">Writes messages to the console and log file.</param>
-        /// <param name="button">The button that was pressed.</param>
-        public override void OnButtonPressed(IMonitor monitor, SButton button)
-        {
-            if (this.ExpiryTicks != null)
-                monitor.Log($"Pressed {button}", LogLevel.Info);
-        }
     }
 }

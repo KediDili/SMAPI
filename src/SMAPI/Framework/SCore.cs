@@ -23,7 +23,6 @@ using StardewModdingAPI.Framework.ContentManagers;
 using StardewModdingAPI.Framework.Deprecations;
 using StardewModdingAPI.Framework.Events;
 using StardewModdingAPI.Framework.Exceptions;
-using StardewModdingAPI.Framework.Input;
 using StardewModdingAPI.Framework.Logging;
 using StardewModdingAPI.Framework.Models;
 using StardewModdingAPI.Framework.ModHelpers;
@@ -221,7 +220,6 @@ namespace StardewModdingAPI.Framework
             {
                 JsonConverter[] converters = {
                     new ColorConverter(),
-                    new KeybindConverter(),
                     new PointConverter(),
                     new Vector2Converter(),
                     new RectangleConverter()
@@ -570,16 +568,6 @@ namespace StardewModdingAPI.Framework
 
 
                 /*********
-                ** Update input
-                *********/
-                // This should *always* run, even when suppressing mod events, since the game uses
-                // this too. For example, doing this after mod event suppression would prevent the
-                // user from doing anything on the overnight shipping screen.
-                SInputState inputState = instance.Input;
-                if (this.Game.IsActive)
-                    inputState.TrueUpdate();
-
-                /*********
                 ** Special cases
                 *********/
                 // Run async tasks synchronously to avoid issues due to mod events triggering
@@ -747,7 +735,6 @@ namespace StardewModdingAPI.Framework
                 *********/
                 try
                 {
-                    instance.Input.ApplyOverrides(); // if mods added any new overrides since the update, process them now
                     runUpdate();
                 }
                 catch (Exception ex)
@@ -1511,7 +1498,7 @@ namespace StardewModdingAPI.Framework
                         IModRegistry modRegistryHelper = new ModRegistryHelper(mod, this.ModRegistry, proxyFactory, monitor);
                         IMultiplayerHelper multiplayerHelper = new MultiplayerHelper(mod, this.Multiplayer);
 
-                        modHelper = new ModHelper(mod, mod.DirectoryPath, () => this.GetCurrentGameInstance().Input, events, gameContentHelper, modContentHelper, contentPackHelper, commandHelper, dataHelper, modRegistryHelper, reflectionHelper, multiplayerHelper, translationHelper);
+                        modHelper = new ModHelper(mod, mod.DirectoryPath, events, gameContentHelper, modContentHelper, contentPackHelper, commandHelper, dataHelper, modRegistryHelper, reflectionHelper, multiplayerHelper, translationHelper);
                     }
 
                     // init mod

@@ -36,11 +36,6 @@ namespace StardewModdingAPI.Mods.ConsoleCommands.Framework.Commands
         /// <param name="monitor">Writes messages to the console and log file.</param>
         public virtual void OnUpdated(IMonitor monitor) { }
 
-        /// <summary>Perform any logic when input is received.</summary>
-        /// <param name="monitor">Writes messages to the console and log file.</param>
-        /// <param name="button">The button that was pressed.</param>
-        public virtual void OnButtonPressed(IMonitor monitor, SButton button) { }
-
 
         /*********
         ** Protected methods

@@ -3,11 +3,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using StardewModdingAPI.Framework.Input;
 using StardewModdingAPI.Framework.Reflection;
 using StardewModdingAPI.Framework.Utilities;
 using StardewModdingAPI.Internal;
-using StardewModdingAPI.Utilities;
 using StardewValley;
 
 namespace StardewModdingAPI.Framework
@@ -30,9 +28,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</summary>
         private readonly Action<string> ExitGameImmediately;
 
-        /// <summary>The initial override for <see cref="Input"/>. This value is null after initialization.</summary>
-        private SInputState? InitialInput;
-
         /// <summary>The initial override for <see cref="Multiplayer"/>. This value is null after initialization.</summary>
         private SMultiplayer? InitialMultiplayer;
 
@@ -46,9 +41,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Accessors
         *********/
-        /// <summary>Manages input visible to the game.</summary>
-        public SInputState Input => (SInputState)Game1.input;
-
         /// <summary>Whether the current update tick is the first one for this instance.</summary>
         public bool IsFirstTick = true;
 
@@ -85,14 +77,13 @@ namespace StardewModdingAPI.Framework
         /// <param name="exitGameImmediately">Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</param>
         /// <param name="onUpdating">Raised when the instance is updating its state (roughly 60 times per second).</param>
         /// <param name="onContentLoaded">Raised after the game finishes loading its initial content.</param>
-        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Reflector reflection, SInputState input, SModHooks modHooks, SMultiplayer multiplayer, Action<string> exitGameImmediately, Action<SGame, GameTime, Action> onUpdating, Action onContentLoaded)
+        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Reflector reflection, SModHooks modHooks, SMultiplayer multiplayer, Action<string> exitGameImmediately, Action<SGame, GameTime, Action> onUpdating, Action onContentLoaded)
             : base(playerIndex, instanceIndex)
         {
             // init XNA
             Game1.graphics.GraphicsProfile = GraphicsProfile.HiDef;
 
             // hook into game
-            Game1.input = this.InitialInput = input;
             Game1.multiplayer = this.InitialMultiplayer = multiplayer;
             Game1.hooks = modHooks;
             this._locations = new ObservableCollection<GameLocation>();
@@ -103,17 +94,6 @@ namespace StardewModdingAPI.Framework
             this.ExitGameImmediately = exitGameImmediately;
             this.OnUpdating = onUpdating;
             this.OnContentLoaded = onContentLoaded;
-        }
-
-        /// <summary>Get the current input state for a button.</summary>
-        /// <param name="button">The button to check.</param>
-        /// <remarks>This is intended for use by <see cref="Keybind"/> and shouldn't be used directly in most cases.</remarks>
-        internal static SButtonState GetInputState(SButton button)
-        {
-            if (Game1.input is not SInputState inputHandler)
-                throw new InvalidOperationException("SMAPI's input state is not in a ready state yet.");
-
-            return inputHandler.GetState(button);
         }
 
         /// <inheritdoc />
@@ -144,11 +124,9 @@ namespace StardewModdingAPI.Framework
             base.Initialize();
 
             // The game resets public static fields after the class is constructed (see GameRunner.SetInstanceDefaults), so SMAPI needs to re-override them here.
-            Game1.input = this.InitialInput;
             Game1.multiplayer = this.InitialMultiplayer;
 
             // The Initial* fields should no longer be used after this point, since mods may further override them after initialization.
-            this.InitialInput = null;
             this.InitialMultiplayer = null;
         }
 
@@ -156,10 +134,6 @@ namespace StardewModdingAPI.Framework
         /// <param name="gameTime">A snapshot of the game timing state.</param>
         protected override void Update(GameTime gameTime)
         {
-            // set initial state
-            if (this.IsFirstTick)
-                this.Input.TrueUpdate();
-
             // update
             try
             {

@@ -31,10 +31,5 @@ namespace StardewModdingAPI.Mods.ConsoleCommands.Framework.Commands
         /// <summary>Perform any logic needed on update tick.</summary>
         /// <param name="monitor">Writes messages to the console and log file.</param>
         void OnUpdated(IMonitor monitor);
-
-        /// <summary>Perform any logic when input is received.</summary>
-        /// <param name="monitor">Writes messages to the console and log file.</param>
-        /// <param name="button">The button that was pressed.</param>
-        void OnButtonPressed(IMonitor monitor, SButton button);
     }
 }
