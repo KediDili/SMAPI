@@ -1,7 +1,6 @@
 using System;
 using System.Reflection;
 using StardewModdingAPI.Internal.Patching;
-using StardewModdingAPI.Mods.ErrorHandler.ModPatches;
 using StardewModdingAPI.Mods.ErrorHandler.Patches;
 
 namespace StardewModdingAPI.Mods.ErrorHandler
@@ -30,10 +29,7 @@ namespace StardewModdingAPI.Mods.ErrorHandler
                 new ObjectPatcher(),
                 new SaveGamePatcher(this.Monitor, this.OnSaveContentRemoved),
                 new SpriteBatchPatcher(),
-                new UtilityPatcher(),
-
-                // mod patches
-                new PyTkPatcher(helper.ModRegistry)
+                new UtilityPatcher()
             );
         }
 

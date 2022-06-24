@@ -57,11 +57,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>The cached <see cref="Farmer.UniqueMultiplayerID"/> value for this instance's player.</summary>
         public long? PlayerId { get; private set; }
 
-        /// <summary>Construct a content manager to read game content files.</summary>
-        /// <remarks>This must be static because the game accesses it before the <see cref="SGame"/> constructor is called.</remarks>
-        [NonInstancedStatic]
-        public static Func<IServiceProvider, string, LocalizedContentManager>? CreateContentManagerImpl;
-
 
         /*********
         ** Public methods
@@ -107,17 +102,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Protected methods
         *********/
-        /// <summary>Construct a content manager to read game content files.</summary>
-        /// <param name="serviceProvider">The service provider to use to locate services.</param>
-        /// <param name="rootDirectory">The root directory to search for content.</param>
-        protected override LocalizedContentManager CreateContentManager(IServiceProvider serviceProvider, string rootDirectory)
-        {
-            if (SGame.CreateContentManagerImpl == null)
-                throw new InvalidOperationException($"The {nameof(SGame)}.{nameof(SGame.CreateContentManagerImpl)} must be set.");
-
-            return SGame.CreateContentManagerImpl(serviceProvider, rootDirectory);
-        }
-
         /// <summary>Initialize the instance when the game starts.</summary>
         protected override void Initialize()
         {

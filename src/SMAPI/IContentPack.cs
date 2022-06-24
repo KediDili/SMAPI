@@ -17,9 +17,6 @@ namespace StardewModdingAPI
         /// <summary>Provides translations stored in the content pack's <c>i18n</c> folder. See <see cref="IModHelper.Translation"/> for more info.</summary>
         ITranslationHelper Translation { get; }
 
-        /// <summary>An API for loading content assets from the content pack's files.</summary>
-        IModContentHelper ModContent { get; }
-
 
         /*********
         ** Public methods

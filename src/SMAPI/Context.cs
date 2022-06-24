@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using StardewModdingAPI.Enums;
-using StardewModdingAPI.Events;
 using StardewModdingAPI.Framework;
 using StardewModdingAPI.Utilities;
 using StardewValley;

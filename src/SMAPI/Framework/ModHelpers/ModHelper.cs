@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using StardewModdingAPI.Events;
 
 namespace StardewModdingAPI.Framework.ModHelpers
 {
@@ -12,15 +11,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
         *********/
         /// <inheritdoc />
         public string DirectoryPath { get; }
-
-        /// <inheritdoc />
-        public IModEvents Events { get; }
-
-        /// <inheritdoc />
-        public IGameContentHelper GameContent { get; }
-
-        /// <inheritdoc />
-        public IModContentHelper ModContent { get; }
 
         /// <inheritdoc />
         public IContentPackHelper ContentPacks { get; }
@@ -64,7 +54,7 @@ namespace StardewModdingAPI.Framework.ModHelpers
         /// <exception cref="ArgumentNullException">An argument is null or empty.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="modDirectory"/> path does not exist on disk.</exception>
         public ModHelper(
-            IModMetadata mod, string modDirectory, IModEvents events, IGameContentHelper gameContentHelper, IModContentHelper modContentHelper, IContentPackHelper contentPackHelper, ICommandHelper commandHelper, IDataHelper dataHelper, IModRegistry modRegistry, IReflectionHelper reflectionHelper, IMultiplayerHelper multiplayer, ITranslationHelper translationHelper
+            IModMetadata mod, string modDirectory, IContentPackHelper contentPackHelper, ICommandHelper commandHelper, IDataHelper dataHelper, IModRegistry modRegistry, IReflectionHelper reflectionHelper, IMultiplayerHelper multiplayer, ITranslationHelper translationHelper
         )
             : base(mod)
         {
@@ -76,8 +66,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
 
             // initialize
             this.DirectoryPath = modDirectory;
-            this.GameContent = gameContentHelper ?? throw new ArgumentNullException(nameof(gameContentHelper));
-            this.ModContent = modContentHelper ?? throw new ArgumentNullException(nameof(modContentHelper));
             this.ContentPacks = contentPackHelper ?? throw new ArgumentNullException(nameof(contentPackHelper));
             this.Data = dataHelper ?? throw new ArgumentNullException(nameof(dataHelper));
             this.ModRegistry = modRegistry ?? throw new ArgumentNullException(nameof(modRegistry));
@@ -85,7 +73,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
             this.Reflection = reflectionHelper ?? throw new ArgumentNullException(nameof(reflectionHelper));
             this.Multiplayer = multiplayer ?? throw new ArgumentNullException(nameof(multiplayer));
             this.Translation = translationHelper ?? throw new ArgumentNullException(nameof(translationHelper));
-            this.Events = events;
         }
 
         /****

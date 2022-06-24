@@ -1,5 +1,3 @@
-using StardewModdingAPI.Events;
-
 namespace StardewModdingAPI
 {
     /// <summary>Provides simplified APIs for writing mods.</summary>
@@ -11,18 +9,8 @@ namespace StardewModdingAPI
         /// <summary>The full path to the mod's folder.</summary>
         string DirectoryPath { get; }
 
-        /// <summary>Manages access to events raised by SMAPI, which let your mod react when something happens in the game.</summary>
-        IModEvents Events { get; }
-
         /// <summary>An API for managing console commands.</summary>
         ICommandHelper ConsoleCommands { get; }
-
-        /// <summary>An API for loading content assets from the game's <c>Content</c> folder or using the <see cref="IModEvents.Content"/> events.</summary>
-        IGameContentHelper GameContent { get; }
-
-        /// <summary>An API for loading content assets from your mod's files.</summary>
-        /// <remarks>This API is intended for reading content assets from the mod files (like game data, images, etc); see also <see cref="Data"/> which is intended for persisting internal mod data.</remarks>
-        IModContentHelper ModContent { get; }
 
         /// <summary>An API for managing content packs.</summary>
         IContentPackHelper ContentPacks { get; }

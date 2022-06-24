@@ -5,7 +5,6 @@ using System.Linq;
 using Galaxy.Api;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using StardewModdingAPI.Framework.Events;
 using StardewModdingAPI.Framework.Networking;
 using StardewModdingAPI.Framework.Reflection;
 using StardewModdingAPI.Internal;
@@ -46,9 +45,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>Simplifies access to private code.</summary>
         private readonly Reflector Reflection;
 
-        /// <summary>Manages SMAPI events.</summary>
-        private readonly EventManager EventManager;
-
         /// <summary>A callback to invoke when a mod message is received.</summary>
         private readonly Action<ModMessageModel> OnModMessageReceived;
 
@@ -81,16 +77,14 @@ namespace StardewModdingAPI.Framework
         *********/
         /// <summary>Construct an instance.</summary>
         /// <param name="monitor">Encapsulates monitoring and logging.</param>
-        /// <param name="eventManager">Manages SMAPI events.</param>
         /// <param name="jsonHelper">Encapsulates SMAPI's JSON file parsing.</param>
         /// <param name="modRegistry">Tracks the installed mods.</param>
         /// <param name="reflection">Simplifies access to private code.</param>
         /// <param name="onModMessageReceived">A callback to invoke when a mod message is received.</param>
         /// <param name="logNetworkTraffic">Whether to log network traffic.</param>
-        public SMultiplayer(IMonitor monitor, EventManager eventManager, JsonHelper jsonHelper, ModRegistry modRegistry, Reflector reflection, Action<ModMessageModel> onModMessageReceived, bool logNetworkTraffic)
+        public SMultiplayer(IMonitor monitor, JsonHelper jsonHelper, ModRegistry modRegistry, Reflector reflection, Action<ModMessageModel> onModMessageReceived, bool logNetworkTraffic)
         {
             this.Monitor = monitor;
-            this.EventManager = eventManager;
             this.JsonHelper = jsonHelper;
             this.ModRegistry = modRegistry;
             this.Reflection = reflection;

@@ -1,5 +1,3 @@
-using StardewModdingAPI.Events;
-
 namespace StardewModdingAPI.Framework.ModLoading
 {
     /// <summary>Indicates how an instruction was handled.</summary>
