@@ -27,8 +27,6 @@ using StardewModdingAPI.Framework.Reflection;
 using StardewModdingAPI.Framework.Serialization;
 using StardewModdingAPI.Framework.Utilities;
 using StardewModdingAPI.Internal;
-using StardewModdingAPI.Internal.Patching;
-using StardewModdingAPI.Patches;
 using StardewModdingAPI.Toolkit;
 using StardewModdingAPI.Toolkit.Framework.Clients.WebApi;
 using StardewModdingAPI.Toolkit.Framework.ModData;
@@ -38,7 +36,6 @@ using StardewModdingAPI.Toolkit.Utilities.PathLookups;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using LanguageCode = StardewValley.LocalizedContentManager.LanguageCode;
-using MiniMonoModHotfix = MonoMod.Utils.MiniMonoModHotfix;
 using PathUtilities = StardewModdingAPI.Toolkit.Utilities.PathUtilities;
 using SObject = StardewValley.Object;
 
@@ -209,13 +206,6 @@ namespace StardewModdingAPI.Framework
                     onGameExiting: this.OnGameExiting
                 );
                 StardewValley.GameRunner.instance = this.Game;
-
-                // apply game patches
-                MiniMonoModHotfix.Apply();
-                HarmonyPatcher.Apply("SMAPI", this.Monitor,
-                    new Game1Patcher(this.Reflection, this.OnLoadStageChanged),
-                    new TitleMenuPatcher(this.OnLoadStageChanged)
-                );
 
                 // set window titles
                 this.UpdateWindowTitles();

@@ -111,7 +111,6 @@ Global
 		SMAPI.Internal\SMAPI.Internal.projitems*{80efd92f-728f-41e0-8a5b-9f6f49a91899}*SharedItemsImports = 5
 		SMAPI.Internal\SMAPI.Internal.projitems*{85208f8d-6fd1-4531-be05-7142490f59fe}*SharedItemsImports = 13
 		SMAPI.Internal\SMAPI.Internal.projitems*{cd53ad6f-97f4-4872-a212-50c2a0fd3601}*SharedItemsImports = 5
-		SMAPI.Internal.Patching\SMAPI.Internal.Patching.projitems*{e6da2198-7686-4f1d-b312-4a4dc70884c0}*SharedItemsImports = 5
 		SMAPI.Internal\SMAPI.Internal.projitems*{e6da2198-7686-4f1d-b312-4a4dc70884c0}*SharedItemsImports = 5
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
