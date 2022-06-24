@@ -4,14 +4,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 #if SMAPI_FOR_WINDOWS
-using Microsoft.Win32;
 #endif
 using Newtonsoft.Json;
 using StardewModdingAPI.Enums;
@@ -21,16 +19,12 @@ using StardewModdingAPI.Framework.Serialization;
 using StardewModdingAPI.Framework.Utilities;
 using StardewModdingAPI.Internal;
 using StardewModdingAPI.Toolkit;
-using StardewModdingAPI.Toolkit.Framework.Clients.WebApi;
-using StardewModdingAPI.Toolkit.Framework.ModData;
 using StardewModdingAPI.Toolkit.Serialization;
 using StardewModdingAPI.Toolkit.Utilities;
 using StardewModdingAPI.Toolkit.Utilities.PathLookups;
 using StardewModdingAPI.Utilities;
 using StardewValley;
-using LanguageCode = StardewValley.LocalizedContentManager.LanguageCode;
 using PathUtilities = StardewModdingAPI.Toolkit.Utilities.PathUtilities;
-using SObject = StardewValley.Object;
 
 namespace StardewModdingAPI.Framework
 {
@@ -75,20 +69,11 @@ namespace StardewModdingAPI.Framework
         /****
         ** State
         ****/
-        /// <summary>The path to search for mods.</summary>
-        private string ModsPath => Constants.ModsPath;
-
         /// <summary>Whether the game is currently running.</summary>
         private bool IsGameRunning;
 
         /// <summary>Whether the program has been disposed.</summary>
         private bool IsDisposed;
-
-        /// <summary>Whether post-game-startup initialization has been performed.</summary>
-        private bool IsInitialized;
-
-        /// <summary>The last language set by the game.</summary>
-        private (string Locale, LanguageCode Code) LastLanguage { get; set; } = ("", LanguageCode.en);
 
         /// <summary>The maximum number of consecutive attempts SMAPI should make to recover from an update error.</summary>
         private readonly Countdown UpdateCrashTimer = new(60); // 60 ticks = roughly one second
@@ -99,12 +84,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>The singleton instance.</summary>
         /// <remarks>This is only intended for use by external code like the Error Handler mod.</remarks>
         internal static SCore Instance { get; private set; } = null!; // initialized in constructor, which happens before other code can access it
-
-        /// <summary>The number of game update ticks which have already executed. This is similar to <see cref="Game1.ticks"/>, but incremented more consistently for every tick.</summary>
-        internal static uint TicksElapsed { get; private set; }
-
-        /// <summary>A specialized form of <see cref="TicksElapsed"/> which is incremented each time SMAPI performs a processing tick (whether that's a game update, one wait cycle while synchronizing code, etc).</summary>
-        internal static uint ProcessTicksElapsed { get; private set; }
 
 
         /*********
@@ -181,7 +160,6 @@ namespace StardewModdingAPI.Framework
                     exitGameImmediately: this.ExitGameImmediately,
 
                     onGameContentLoaded: this.OnInstanceContentLoaded,
-                    onGameUpdating: this.OnGameUpdating,
                     onPlayerInstanceUpdating: this.OnPlayerInstanceUpdating,
                     onGameExiting: this.OnGameExiting
                 );
@@ -275,46 +253,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Private methods
         *********/
-        /// <summary>Initialize mods before the first game asset is loaded. At this point the core content managers are loaded (so mods can load their own assets), but the game is mostly uninitialized.</summary>
-        private void InitializeBeforeFirstAssetLoaded()
-        {
-            if (this.IsExiting)
-            {
-                this.Monitor.Log("SMAPI shutting down: aborting initialization.", LogLevel.Warn);
-                return;
-            }
-
-            // init TMX support
-            xTile.Format.FormatManager.Instance.RegisterMapFormat(new TMXTile.TMXFormat(Game1.tileSize / Game1.pixelZoom, Game1.tileSize / Game1.pixelZoom, Game1.pixelZoom, Game1.pixelZoom));
-
-            // load mod data
-            ModToolkit toolkit = new();
-            ModDatabase modDatabase = toolkit.GetModDatabase(Constants.ApiMetadataPath);
-
-            // load mods
-            {
-            }
-
-            // check for software likely to cause issues
-            this.CheckForSoftwareConflicts();
-
-            // check for updates
-            _ = this.CheckForUpdatesAsync(); // ignore task since the main thread doesn't need to wait for it
-
-            // update window titles
-            this.UpdateWindowTitles();
-        }
-
-        /// <summary>Raised after the game finishes initializing.</summary>
-        private void OnGameInitialized()
-        {
-            // validate XNB integrity
-            if (!this.ValidateContentIntegrity())
-                this.Monitor.Log("SMAPI found problems in your game's content files which are likely to cause errors or crashes. Consider uninstalling XNB mods or reinstalling the game.", LogLevel.Error);
-
-            this.InitializeBeforeFirstAssetLoaded();
-        }
-
         /// <summary>Raised after an instance finishes loading its initial content.</summary>
         private void OnInstanceContentLoaded()
         {
@@ -322,58 +260,6 @@ namespace StardewModdingAPI.Framework
 #if SMAPI_FOR_WINDOWS
             this.Monitor.Log($"Running on GPU: {Game1.game1.GraphicsDevice?.Adapter?.Description ?? "<unknown>"}");
 #endif
-        }
-
-        /// <summary>Raised when the game is updating its state (roughly 60 times per second).</summary>
-        /// <param name="gameTime">A snapshot of the game timing state.</param>
-        /// <param name="runGameUpdate">Invoke the game's update logic.</param>
-        private void OnGameUpdating(GameTime gameTime, Action runGameUpdate)
-        {
-            try
-            {
-                /*********
-                ** First-tick initialization
-                *********/
-                if (!this.IsInitialized)
-                {
-                    this.IsInitialized = true;
-                    this.OnGameInitialized();
-                }
-
-                /*********
-                ** Special cases
-                *********/
-                // Abort if SMAPI is exiting.
-                if (this.IsExiting)
-                {
-                    this.Monitor.Log("SMAPI shutting down: aborting update.");
-                    return;
-                }
-
-                /*********
-                ** Run game update
-                *********/
-                runGameUpdate();
-
-                /*********
-                ** Reset crash timer
-                *********/
-                this.UpdateCrashTimer.Reset();
-            }
-            catch (Exception ex)
-            {
-                // log error
-                this.Monitor.Log($"An error occurred in the overridden update loop: {ex.GetLogSummary()}", LogLevel.Error);
-
-                // exit if irrecoverable
-                if (!this.UpdateCrashTimer.Decrement())
-                    this.ExitGameImmediately("The game crashed when updating, and SMAPI was unable to recover the game.");
-            }
-            finally
-            {
-                SCore.TicksElapsed++;
-                SCore.ProcessTicksElapsed++;
-            }
         }
 
         /// <summary>Raised when the game instance for a local player is updating (once per <see cref="OnGameUpdating"/> per player).</summary>
@@ -548,61 +434,6 @@ namespace StardewModdingAPI.Framework
             this.Dispose();
         }
 
-        /// <summary>Look for common issues with the game's XNB content, and log warnings if anything looks broken or outdated.</summary>
-        /// <returns>Returns whether all integrity checks passed.</returns>
-        private bool ValidateContentIntegrity()
-        {
-            this.Monitor.Log("Detecting common issues...");
-            bool issuesFound = false;
-
-            // object format (commonly broken by outdated files)
-            {
-                // detect issues
-                bool hasObjectIssues = false;
-                void LogIssue(int id, string issue) => this.Monitor.Log($@"Detected issue: item #{id} in Content\Data\ObjectInformation.xnb is invalid ({issue}).");
-                foreach ((int id, string? fieldsStr) in Game1.objectInformation)
-                {
-                    // must not be empty
-                    if (string.IsNullOrWhiteSpace(fieldsStr))
-                    {
-                        LogIssue(id, "entry is empty");
-                        hasObjectIssues = true;
-                        continue;
-                    }
-
-                    // require core fields
-                    string[] fields = fieldsStr.Split('/');
-                    if (fields.Length < SObject.objectInfoDescriptionIndex + 1)
-                    {
-                        LogIssue(id, "too few fields for an object");
-                        hasObjectIssues = true;
-                        continue;
-                    }
-
-                    // check min length for specific types
-                    switch (fields[SObject.objectInfoTypeIndex].Split(new[] { ' ' }, 2)[0])
-                    {
-                        case "Cooking":
-                            if (fields.Length < SObject.objectInfoBuffDurationIndex + 1)
-                            {
-                                LogIssue(id, "too few fields for a cooking item");
-                                hasObjectIssues = true;
-                            }
-                            break;
-                    }
-                }
-
-                // log error
-                if (hasObjectIssues)
-                {
-                    issuesFound = true;
-                    this.Monitor.Log(@"Your Content\Data\ObjectInformation.xnb file seems to be broken or outdated.", LogLevel.Warn);
-                }
-            }
-
-            return !issuesFound;
-        }
-
         /// <summary>Set the titles for the game and console windows.</summary>
         private void UpdateWindowTitles()
         {
@@ -620,122 +451,6 @@ namespace StardewModdingAPI.Framework
             this.LogManager.SetConsoleTitle(consoleTitle);
         }
 
-        /// <summary>Log a warning if software known to cause issues is installed.</summary>
-        private void CheckForSoftwareConflicts()
-        {
-#if SMAPI_FOR_WINDOWS
-            this.Monitor.Log("Checking for known software conflicts...");
-
-            try
-            {
-                string[] registryKeys = { @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" };
-
-                string[] installedNames = registryKeys
-                    .SelectMany(registryKey =>
-                    {
-                        using RegistryKey? key = Registry.LocalMachine.OpenSubKey(registryKey);
-                        if (key == null)
-                            return Array.Empty<string>();
-
-                        return key
-                            .GetSubKeyNames()
-                            .Select(subkeyName =>
-                            {
-                                using RegistryKey? subkey = key.OpenSubKey(subkeyName);
-                                string? displayName = (string?)subkey?.GetValue("DisplayName");
-                                string? displayVersion = (string?)subkey?.GetValue("DisplayVersion");
-
-                                if (displayName != null && displayVersion != null && displayName.EndsWith($" {displayVersion}"))
-                                    displayName = displayName.Substring(0, displayName.Length - displayVersion.Length - 1);
-
-                                return displayName;
-                            })
-                            .ToArray();
-                    })
-                    .Where(name => name != null && (name.Contains("MSI Afterburner") || name.Contains("RivaTuner")))
-                    .Select(name => name!)
-                    .Distinct()
-                    .OrderBy(name => name)
-                    .ToArray();
-
-                if (installedNames.Any())
-                    this.Monitor.Log($"Found {string.Join(" and ", installedNames)} installed, which may conflict with SMAPI. If you experience errors or crashes, try disabling that software or adding an exception for SMAPI and Stardew Valley.", LogLevel.Warn);
-                else
-                    this.Monitor.Log("   None found!");
-            }
-            catch (Exception ex)
-            {
-                this.Monitor.Log($"Failed when checking for conflicting software. Technical details:\n{ex}");
-            }
-#endif
-        }
-
-        /// <summary>Asynchronously check for a new version of SMAPI and any installed mods, and print alerts to the console if an update is available.</summary>
-        private async Task CheckForUpdatesAsync()
-        {
-            try
-            {
-                if (!this.Settings.CheckForUpdates)
-                    return;
-
-                // create client
-                using WebApiClient client = new(this.Settings.WebApiBaseUrl, Constants.ApiVersion);
-                this.Monitor.Log("Checking for updates...");
-
-                // check SMAPI version
-                {
-                    ISemanticVersion? updateFound = null;
-                    string? updateUrl = null;
-                    try
-                    {
-                        // fetch update check
-                        IDictionary<string, ModEntryModel> response = await client.GetModInfoAsync(
-                            mods: new[] { new ModSearchEntryModel("Pathoschild.SMAPI", Constants.ApiVersion, new[] { $"GitHub:{this.Settings.GitHubProjectName}" }) },
-                            apiVersion: Constants.ApiVersion,
-                            gameVersion: Constants.GameVersion,
-                            platform: Constants.Platform
-                        );
-                        ModEntryModel updateInfo = response.Single().Value;
-                        updateFound = updateInfo.SuggestedUpdate?.Version;
-                        updateUrl = updateInfo.SuggestedUpdate?.Url;
-
-                        // log message
-                        if (updateFound != null)
-                            this.Monitor.Log($"You can update SMAPI to {updateFound}: {updateUrl}", LogLevel.Alert);
-                        else
-                            this.Monitor.Log("   SMAPI okay.");
-
-                        // show errors
-                        if (updateInfo.Errors.Any())
-                        {
-                            this.Monitor.Log("Couldn't check for a new version of SMAPI. This won't affect your game, but you may not be notified of new versions if this keeps happening.", LogLevel.Warn);
-                            this.Monitor.Log($"Error: {string.Join("\n", updateInfo.Errors)}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        this.Monitor.Log("Couldn't check for a new version of SMAPI. This won't affect your game, but you won't be notified of new versions if this keeps happening.", LogLevel.Warn);
-                        this.Monitor.Log(ex is WebException && ex.InnerException == null
-                            ? $"Error: {ex.Message}"
-                            : $"Error: {ex.GetLogSummary()}"
-                        );
-                    }
-
-                    // show update message on next launch
-                    if (updateFound != null)
-                        this.LogManager.WriteUpdateMarker(updateFound.ToString(), updateUrl ?? Constants.HomePageUrl);
-                }
-            }
-            catch (Exception ex)
-            {
-                this.Monitor.Log("Couldn't check for updates. This won't affect your game, but you won't be notified of SMAPI or mod updates if this keeps happening.", LogLevel.Warn);
-                this.Monitor.Log(ex is WebException && ex.InnerException == null
-                    ? ex.Message
-                    : ex.ToString()
-                );
-            }
-        }
-
         /// <summary>Create a directory path if it doesn't exist.</summary>
         /// <param name="path">The directory path.</param>
         private void VerifyPath(string path)
@@ -749,44 +464,6 @@ namespace StardewModdingAPI.Framework
             {
                 // note: this happens before this.Monitor is initialized
                 Console.WriteLine($"Couldn't create a path: {path}\n\n{ex.GetLogSummary()}");
-            }
-        }
-
-        /// <summary>Reload translations for the given mods.</summary>
-        /// <param name="mods">The mods for which to reload translations.</param>
-        private void ReloadTranslations(IEnumerable<IModMetadata> mods)
-        {
-            // core SMAPI translations
-            {
-                var translations = this.ReadTranslationFiles(Path.Combine(Constants.InternalFilesPath, "i18n"), out IList<string> errors);
-                if (errors.Any() || !translations.Any())
-                {
-                    this.Monitor.Log("SMAPI couldn't load some core translations. You may need to reinstall SMAPI.", LogLevel.Warn);
-                    foreach (string error in errors)
-                        this.Monitor.Log($"  - {error}", LogLevel.Warn);
-                }
-                this.Translator.SetTranslations(translations);
-            }
-
-            // mod translations
-            foreach (IModMetadata metadata in mods)
-            {
-                // top-level mod
-                {
-                    var translations = this.ReadTranslationFiles(Path.Combine(metadata.DirectoryPath, "i18n"), out IList<string> errors);
-                    if (errors.Any())
-                    {
-                        metadata.LogAsMod("Mod couldn't load some translation files:", LogLevel.Warn);
-                        foreach (string error in errors)
-                            metadata.LogAsMod($"  - {error}", LogLevel.Warn);
-                    }
-
-                    metadata.Translations!.SetTranslations(translations);
-                }
-
-                // fake content packs
-                foreach (ContentPack pack in metadata.GetFakeContentPacks())
-                    this.ReloadTranslationsForTemporaryContentPack(metadata, pack);
             }
         }
 

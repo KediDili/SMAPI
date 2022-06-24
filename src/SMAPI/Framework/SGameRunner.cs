@@ -22,9 +22,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>Raised after the game finishes loading its initial content.</summary>
         private readonly Action OnGameContentLoaded;
 
-        /// <summary>Raised when XNA is updating (roughly 60 times per second).</summary>
-        private readonly Action<GameTime, Action> OnGameUpdating;
-
         /// <summary>Raised when the game instance for a local split-screen player is updating (once per <see cref="OnGameUpdating"/> per player).</summary>
         private readonly Action<SGame, GameTime, Action> OnPlayerInstanceUpdating;
 
@@ -46,10 +43,9 @@ namespace StardewModdingAPI.Framework
         /// <param name="monitor">Encapsulates monitoring and logging for SMAPI.</param>
         /// <param name="exitGameImmediately">Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</param>
         /// <param name="onGameContentLoaded">Raised after the game finishes loading its initial content.</param>
-        /// <param name="onGameUpdating">Raised when XNA is updating its state (roughly 60 times per second).</param>
         /// <param name="onPlayerInstanceUpdating">Raised when the game instance for a local split-screen player is updating (once per <see cref="OnGameUpdating"/> per player).</param>
         /// <param name="onGameExiting">Raised before the game exits.</param>
-        public SGameRunner(Monitor monitor, Action<string> exitGameImmediately, Action onGameContentLoaded, Action<GameTime, Action> onGameUpdating, Action<SGame, GameTime, Action> onPlayerInstanceUpdating, Action onGameExiting)
+        public SGameRunner(Monitor monitor, Action<string> exitGameImmediately, Action onGameContentLoaded, Action<SGame, GameTime, Action> onPlayerInstanceUpdating, Action onGameExiting)
         {
             // init XNA
             Game1.graphics.GraphicsProfile = GraphicsProfile.HiDef;
@@ -58,7 +54,6 @@ namespace StardewModdingAPI.Framework
             this.Monitor = monitor;
             this.ExitGameImmediately = exitGameImmediately;
             this.OnGameContentLoaded = onGameContentLoaded;
-            this.OnGameUpdating = onGameUpdating;
             this.OnPlayerInstanceUpdating = onPlayerInstanceUpdating;
             this.OnGameExiting = onGameExiting;
         }
@@ -110,13 +105,6 @@ namespace StardewModdingAPI.Framework
         protected override void OnExiting(object sender, EventArgs args)
         {
             this.OnGameExiting();
-        }
-
-        /// <summary>The method called when the game is updating its state (roughly 60 times per second).</summary>
-        /// <param name="gameTime">A snapshot of the game timing state.</param>
-        protected override void Update(GameTime gameTime)
-        {
-            this.OnGameUpdating(gameTime, () => base.Update(gameTime));
         }
 
         /// <summary>Update metadata when a split screen is added or removed.</summary>
