@@ -434,45 +434,6 @@ namespace StardewModdingAPI.Framework
                 /*********
                 ** Special cases
                 *********/
-                // Run async tasks synchronously to avoid issues due to mod events triggering
-                // concurrently with game code.
-                bool saveParsed = false;
-                if (Game1.currentLoader != null)
-                {
-                    this.Monitor.Log("Game loader synchronizing...");
-                    this.Reflection.GetMethod(Game1.game1, "UpdateTitleScreen").Invoke(Game1.currentGameTime); // run game logic to change music on load, etc
-                    // ReSharper disable once ConstantConditionalAccessQualifier -- may become null within the loop
-                    while (Game1.currentLoader?.MoveNext() == true)
-                    {
-                        SCore.ProcessTicksElapsed++;
-
-                        // raise load stage changed
-                        switch (Game1.currentLoader.Current)
-                        {
-                            case 20 when (!saveParsed && SaveGame.loaded != null):
-                                saveParsed = true;
-                                this.OnLoadStageChanged(LoadStage.SaveParsed);
-                                break;
-
-                            case 36:
-                                this.OnLoadStageChanged(LoadStage.SaveLoadedBasicInfo);
-                                break;
-
-                            case 50:
-                                this.OnLoadStageChanged(LoadStage.SaveLoadedLocations);
-                                break;
-
-                            default:
-                                if (Game1.gameMode == Game1.playingGameMode)
-                                    this.OnLoadStageChanged(LoadStage.Preloaded);
-                                break;
-                        }
-                    }
-
-                    Game1.currentLoader = null;
-                    this.Monitor.Log("Game loader done.");
-                }
-
                 // While a background task is in progress, the game may make changes to the game
                 // state while mods are running their code. This is risky, because data changes can
                 // conflict (e.g. collection changed during enumeration errors) and data may change
@@ -482,7 +443,7 @@ namespace StardewModdingAPI.Framework
                 // a small chance that the task will finish after we defer but before the game checks,
                 // which means technically events should be raised, but the effects of missing one
                 // update tick are negligible and not worth the complications of bypassing Game1.Update.
-                if (Game1.gameMode == Game1.loadingMode)
+                if (Game1.currentLoader != null || Game1.gameMode == Game1.loadingMode)
                 {
                     runUpdate();
                     return;
