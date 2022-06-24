@@ -59,9 +59,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>The core logger and monitor for SMAPI.</summary>
         private Monitor Monitor => this.LogManager.Monitor;
 
-        /// <summary>Simplifies access to private game code.</summary>
-        private readonly Reflector Reflection = new();
-
         /// <summary>Encapsulates access to SMAPI core translations.</summary>
         private readonly Translator Translator = new();
 
@@ -196,7 +193,6 @@ namespace StardewModdingAPI.Framework
                 // override game
                 this.Game = new SGameRunner(
                     monitor: this.Monitor,
-                    reflection: this.Reflection,
                     exitGameImmediately: this.ExitGameImmediately,
 
                     onGameContentLoaded: this.OnInstanceContentLoaded,
@@ -588,13 +584,6 @@ namespace StardewModdingAPI.Framework
             Context.LoadStage = newStage;
             this.Monitor.VerboseLog($"Context: load stage changed to {newStage}");
         }
-
-        /// <summary>A callback invoked before <see cref="Game1.newDayAfterFade"/> runs.</summary>
-        protected void OnNewDayAfterFade()
-        {
-            this.Reflection.NewCacheInterval();
-        }
-
 
         /// <summary>Raised before the game exits.</summary>
         private void OnGameExiting()
@@ -1107,10 +1096,9 @@ namespace StardewModdingAPI.Framework
                             createContentPack: (dirPath, fakeManifest) => this.CreateFakeContentPack(dirPath, fakeManifest, mod)
                         );
                         IDataHelper dataHelper = new DataHelper(mod, mod.DirectoryPath, jsonHelper);
-                        IReflectionHelper reflectionHelper = new ReflectionHelper(mod, mod.DisplayName, this.Reflection);
                         IModRegistry modRegistryHelper = new ModRegistryHelper(mod, this.ModRegistry, proxyFactory, monitor);
 
-                        modHelper = new ModHelper(mod, mod.DirectoryPath, contentPackHelper, dataHelper, modRegistryHelper, reflectionHelper, translationHelper);
+                        modHelper = new ModHelper(mod, mod.DirectoryPath, contentPackHelper, dataHelper, modRegistryHelper, translationHelper);
                     }
 
                     // init mod

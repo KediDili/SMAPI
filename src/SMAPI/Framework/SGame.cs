@@ -3,7 +3,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using StardewModdingAPI.Framework.Reflection;
 using StardewModdingAPI.Framework.Utilities;
 using StardewModdingAPI.Internal;
 using StardewValley;
@@ -21,9 +20,6 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>The maximum number of consecutive attempts SMAPI should make to recover from a draw error.</summary>
         private readonly Countdown DrawCrashTimer = new(60); // 60 ticks = roughly one second
-
-        /// <summary>Simplifies access to private game code.</summary>
-        private readonly Reflector Reflection;
 
         /// <summary>Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</summary>
         private readonly Action<string> ExitGameImmediately;
@@ -62,11 +58,10 @@ namespace StardewModdingAPI.Framework
         /// <param name="playerIndex">The player index.</param>
         /// <param name="instanceIndex">The instance index.</param>
         /// <param name="monitor">Encapsulates monitoring and logging for SMAPI.</param>
-        /// <param name="reflection">Simplifies access to private game code.</param>
         /// <param name="exitGameImmediately">Immediately exit the game without saving. This should only be invoked when an irrecoverable fatal error happens that risks save corruption or game-breaking bugs.</param>
         /// <param name="onUpdating">Raised when the instance is updating its state (roughly 60 times per second).</param>
         /// <param name="onContentLoaded">Raised after the game finishes loading its initial content.</param>
-        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Reflector reflection, Action<string> exitGameImmediately, Action<SGame, GameTime, Action> onUpdating, Action onContentLoaded)
+        public SGame(PlayerIndex playerIndex, int instanceIndex, Monitor monitor, Action<string> exitGameImmediately, Action<SGame, GameTime, Action> onUpdating, Action onContentLoaded)
             : base(playerIndex, instanceIndex)
         {
             // init XNA
@@ -77,7 +72,6 @@ namespace StardewModdingAPI.Framework
 
             // init SMAPI
             this.Monitor = monitor;
-            this.Reflection = reflection;
             this.ExitGameImmediately = exitGameImmediately;
             this.OnUpdating = onUpdating;
             this.OnContentLoaded = onContentLoaded;
@@ -137,7 +131,7 @@ namespace StardewModdingAPI.Framework
                 // recover draw state
                 try
                 {
-                    if (Game1.spriteBatch.IsOpen(this.Reflection))
+                    if (Game1.spriteBatch.IsOpen())
                     {
                         this.Monitor.Log("Recovering sprite batch from error...");
                         Game1.spriteBatch.End();

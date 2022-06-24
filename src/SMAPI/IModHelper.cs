@@ -16,9 +16,6 @@ namespace StardewModdingAPI
         /// <remarks>This API is intended for persisting internal mod data; see also <see cref="ModContent"/> which is intended for reading content assets (like game data, images, etc).</remarks>
         IDataHelper Data { get; }
 
-        /// <summary>Simplifies access to private game code.</summary>
-        IReflectionHelper Reflection { get; }
-
         /// <summary>Metadata about loaded mods.</summary>
         IModRegistry ModRegistry { get; }
 

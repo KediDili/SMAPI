@@ -19,9 +19,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
         public IDataHelper Data { get; }
 
         /// <inheritdoc />
-        public IReflectionHelper Reflection { get; }
-
-        /// <inheritdoc />
         public IModRegistry ModRegistry { get; }
 
         /// <inheritdoc />
@@ -37,12 +34,11 @@ namespace StardewModdingAPI.Framework.ModHelpers
         /// <param name="contentPackHelper">An API for managing content packs.</param>
         /// <param name="dataHelper">An API for reading and writing persistent mod data.</param>
         /// <param name="modRegistry">an API for fetching metadata about loaded mods.</param>
-        /// <param name="reflectionHelper">An API for accessing private game code.</param>
         /// <param name="translationHelper">An API for reading translations stored in the mod's <c>i18n</c> folder.</param>
         /// <exception cref="ArgumentNullException">An argument is null or empty.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="modDirectory"/> path does not exist on disk.</exception>
         public ModHelper(
-            IModMetadata mod, string modDirectory, IContentPackHelper contentPackHelper, IDataHelper dataHelper, IModRegistry modRegistry, IReflectionHelper reflectionHelper, ITranslationHelper translationHelper
+            IModMetadata mod, string modDirectory, IContentPackHelper contentPackHelper, IDataHelper dataHelper, IModRegistry modRegistry, ITranslationHelper translationHelper
         )
             : base(mod)
         {
@@ -57,7 +53,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
             this.ContentPacks = contentPackHelper ?? throw new ArgumentNullException(nameof(contentPackHelper));
             this.Data = dataHelper ?? throw new ArgumentNullException(nameof(dataHelper));
             this.ModRegistry = modRegistry ?? throw new ArgumentNullException(nameof(modRegistry));
-            this.Reflection = reflectionHelper ?? throw new ArgumentNullException(nameof(reflectionHelper));
             this.Translation = translationHelper ?? throw new ArgumentNullException(nameof(translationHelper));
         }
 
