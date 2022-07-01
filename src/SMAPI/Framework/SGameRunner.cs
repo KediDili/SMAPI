@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 
@@ -37,26 +35,6 @@ namespace StardewModdingAPI.Framework
             this.OnGameExiting = onGameExiting;
         }
 
-        /// <inheritdoc />
-        public override void AddGameInstance(PlayerIndex playerIndex)
-        {
-            base.AddGameInstance(playerIndex);
-
-            EarlyConstants.LogScreenId = Context.ScreenId;
-            this.UpdateForSplitScreenChanges();
-        }
-
-        /// <inheritdoc />
-        public override void RemoveGameInstance(Game1 gameInstance)
-        {
-            base.RemoveGameInstance(gameInstance);
-
-            if (this.gameInstances.Count <= 1)
-                EarlyConstants.LogScreenId = null;
-            this.UpdateForSplitScreenChanges();
-        }
-
-
         /*********
         ** Protected methods
         *********/
@@ -67,24 +45,6 @@ namespace StardewModdingAPI.Framework
         protected override void OnExiting(object sender, EventArgs args)
         {
             this.OnGameExiting();
-        }
-
-        /// <summary>Update metadata when a split screen is added or removed.</summary>
-        private void UpdateForSplitScreenChanges()
-        {
-            HashSet<int> oldScreenIds = new(Context.ActiveScreenIds);
-
-            // track active screens
-            Context.ActiveScreenIds.Clear();
-            foreach (var screen in this.gameInstances)
-                Context.ActiveScreenIds.Add(screen.instanceId);
-
-            // remember last removed screen
-            foreach (int id in oldScreenIds)
-            {
-                if (!Context.ActiveScreenIds.Contains(id))
-                    Context.LastRemovedScreenId = id;
-            }
         }
     }
 }

@@ -319,9 +319,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>Get the screen ID that should be logged to distinguish between players in split-screen mode, if any.</summary>
         private int? GetScreenIdForLog()
         {
-            if (Context.ScreenId != 0 || (Context.IsWorldReady && Context.IsSplitScreen))
-                return Context.ScreenId;
-
             return null;
         }
     }

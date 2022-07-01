@@ -76,9 +76,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
         {
             if (Context.LoadStage == LoadStage.None)
                 throw new InvalidOperationException($"Can't use {nameof(IMod.Helper)}.{nameof(IModHelper.Data)}.{nameof(this.ReadSaveData)} when a save file isn't loaded.");
-            if (!Context.IsOnHostComputer)
-                throw new InvalidOperationException($"Can't use {nameof(IMod.Helper)}.{nameof(IModHelper.Data)}.{nameof(this.ReadSaveData)} when connected to a remote host. (Save files are stored on the main player's computer.)");
-
 
             string internalKey = this.GetSaveFileKey(key);
             foreach (IDictionary<string, string> dataField in this.GetDataFields(Context.LoadStage))
@@ -95,8 +92,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
         {
             if (Context.LoadStage == LoadStage.None)
                 throw new InvalidOperationException($"Can't use {nameof(IMod.Helper)}.{nameof(IModHelper.Data)}.{nameof(this.WriteSaveData)} when a save file isn't loaded.");
-            if (!Context.IsOnHostComputer)
-                throw new InvalidOperationException($"Can't use {nameof(IMod.Helper)}.{nameof(IModHelper.Data)}.{nameof(this.WriteSaveData)} when connected to a remote host. (Save files are stored on the main player's computer.)");
 
             string internalKey = this.GetSaveFileKey(key);
             string? data = model != null
