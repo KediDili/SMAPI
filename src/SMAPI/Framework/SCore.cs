@@ -1,27 +1,20 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Security;
-using System.Threading;
 #if SMAPI_FOR_WINDOWS
 #endif
 using Newtonsoft.Json;
 using StardewModdingAPI.Framework.Logging;
 using StardewModdingAPI.Framework.Models;
 using StardewModdingAPI.Framework.Serialization;
-using StardewModdingAPI.Framework.Utilities;
 using StardewModdingAPI.Internal;
 using StardewModdingAPI.Toolkit;
-using StardewModdingAPI.Toolkit.Serialization;
 using StardewModdingAPI.Toolkit.Utilities;
-using StardewModdingAPI.Toolkit.Utilities.PathLookups;
 using StardewModdingAPI.Utilities;
-using StardewValley;
-using PathUtilities = StardewModdingAPI.Toolkit.Utilities.PathUtilities;
 
 namespace StardewModdingAPI.Framework
 {
@@ -34,9 +27,6 @@ namespace StardewModdingAPI.Framework
         /****
         ** Low-level components
         ****/
-        /// <summary>Whether the game should exit immediately and any pending initialization should be cancelled.</summary>
-        private bool IsExiting;
-
         /// <summary>Manages the SMAPI console window and log file.</summary>
         private readonly LogManager LogManager;
 
@@ -66,14 +56,8 @@ namespace StardewModdingAPI.Framework
         /****
         ** State
         ****/
-        /// <summary>Whether the game is currently running.</summary>
-        private bool IsGameRunning;
-
         /// <summary>Whether the program has been disposed.</summary>
         private bool IsDisposed;
-
-        /// <summary>The maximum number of consecutive attempts SMAPI should make to recover from an update error.</summary>
-        private readonly Countdown UpdateCrashTimer = new(60); // 60 ticks = roughly one second
 
         /*********
         ** Accessors
@@ -153,7 +137,6 @@ namespace StardewModdingAPI.Framework
 
                 // override game
                 this.Game = new SGameRunner(
-                    onGameContentLoaded: this.OnInstanceContentLoaded,
                     onGameExiting: this.OnGameExiting
                 );
                 StardewValley.GameRunner.instance = this.Game;
@@ -179,7 +162,6 @@ namespace StardewModdingAPI.Framework
             this.Monitor.Log("Waiting for game to launch...", LogLevel.Debug);
             try
             {
-                this.IsGameRunning = true;
                 StardewValley.Program.releaseBuild = true; // game's debug logic interferes with SMAPI opening the game window
                 this.Game.Run();
             }
@@ -233,8 +215,6 @@ namespace StardewModdingAPI.Framework
             }
 
             // dispose core components
-            this.IsGameRunning = false;
-            this.IsExiting = true;
             this.Game?.Dispose();
             this.LogManager.Dispose(); // dispose last to allow for any last-second log messages
 
@@ -246,15 +226,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Private methods
         *********/
-        /// <summary>Raised after an instance finishes loading its initial content.</summary>
-        private void OnInstanceContentLoaded()
-        {
-            // log GPU info
-#if SMAPI_FOR_WINDOWS
-            this.Monitor.Log($"Running on GPU: {Game1.game1.GraphicsDevice?.Adapter?.Description ?? "<unknown>"}");
-#endif
-        }
-
         /// <summary>Raised before the game exits.</summary>
         private void OnGameExiting()
         {
@@ -292,85 +263,6 @@ namespace StardewModdingAPI.Framework
                 // note: this happens before this.Monitor is initialized
                 Console.WriteLine($"Couldn't create a path: {path}\n\n{ex.GetLogSummary()}");
             }
-        }
-
-        /// <summary>Load or reload translations for a temporary content pack created by a mod.</summary>
-        /// <param name="parentMod">The parent mod which created the content pack.</param>
-        /// <param name="contentPack">The content pack instance.</param>
-        private void ReloadTranslationsForTemporaryContentPack(IModMetadata parentMod, ContentPack contentPack)
-        {
-            var translations = this.ReadTranslationFiles(Path.Combine(contentPack.DirectoryPath, "i18n"), out IList<string> errors);
-            if (errors.Any())
-            {
-                parentMod.LogAsMod($"Generated content pack at '{PathUtilities.GetRelativePath(Constants.ModsPath, contentPack.DirectoryPath)}' couldn't load some translation files:", LogLevel.Warn);
-                foreach (string error in errors)
-                    parentMod.LogAsMod($"  - {error}", LogLevel.Warn);
-            }
-
-            contentPack.TranslationImpl.SetTranslations(translations);
-        }
-
-        /// <summary>Read translations from a directory containing JSON translation files.</summary>
-        /// <param name="folderPath">The folder path to search.</param>
-        /// <param name="errors">The errors indicating why translation files couldn't be parsed, indexed by translation filename.</param>
-        private IDictionary<string, IDictionary<string, string>> ReadTranslationFiles(string folderPath, out IList<string> errors)
-        {
-            JsonHelper jsonHelper = this.Toolkit.JsonHelper;
-
-            // read translation files
-            var translations = new Dictionary<string, IDictionary<string, string>>();
-            errors = new List<string>();
-            DirectoryInfo translationsDir = new(folderPath);
-            if (translationsDir.Exists)
-            {
-                foreach (FileInfo file in translationsDir.EnumerateFiles("*.json"))
-                {
-                    string locale = Path.GetFileNameWithoutExtension(file.Name.ToLower().Trim());
-                    try
-                    {
-                        if (!jsonHelper.ReadJsonFileIfExists(file.FullName, out IDictionary<string, string>? data))
-                        {
-                            errors.Add($"{file.Name} file couldn't be read"); // mainly happens when the file is corrupted or empty
-                            continue;
-                        }
-
-                        translations[locale] = data;
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.Add($"{file.Name} file couldn't be parsed: {ex.GetLogSummary()}");
-                    }
-                }
-            }
-
-            // validate translations
-            foreach (string locale in translations.Keys.ToArray())
-            {
-                // handle duplicates
-                HashSet<string> keys = new(StringComparer.OrdinalIgnoreCase);
-                HashSet<string> duplicateKeys = new(StringComparer.OrdinalIgnoreCase);
-                foreach (string key in translations[locale].Keys.ToArray())
-                {
-                    if (!keys.Add(key))
-                    {
-                        duplicateKeys.Add(key);
-                        translations[locale].Remove(key);
-                    }
-                }
-                if (duplicateKeys.Any())
-                    errors.Add($"{locale}.json has duplicate translation keys: [{string.Join(", ", duplicateKeys)}]. Keys are case-insensitive.");
-            }
-
-            return translations;
-        }
-
-        /// <summary>Get a file lookup for the given directory.</summary>
-        /// <param name="rootDirectory">The root path to scan.</param>
-        private IFileLookup GetFileLookup(string rootDirectory)
-        {
-            return this.Settings.UseCaseInsensitivePaths
-                ? CaseInsensitiveFileLookup.GetCachedFor(rootDirectory)
-                : MinimalFileLookup.GetCachedFor(rootDirectory);
         }
 
         /// <summary>Get the absolute path to the next available log file.</summary>

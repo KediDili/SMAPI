@@ -12,9 +12,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Fields
         *********/
-        /// <summary>Raised after the game finishes loading its initial content.</summary>
-        private readonly Action OnGameContentLoaded;
-
         /// <summary>Raised before the game exits.</summary>
         private readonly Action OnGameExiting;
 
@@ -30,24 +27,14 @@ namespace StardewModdingAPI.Framework
         ** Public methods
         *********/
         /// <summary>Construct an instance.</summary>
-        /// <param name="onGameContentLoaded">Raised after the game finishes loading its initial content.</param>
         /// <param name="onGameExiting">Raised before the game exits.</param>
-        public SGameRunner(Action onGameContentLoaded, Action onGameExiting)
+        public SGameRunner(Action onGameExiting)
         {
             // init XNA
             Game1.graphics.GraphicsProfile = GraphicsProfile.HiDef;
 
             // init SMAPI
-            this.OnGameContentLoaded = onGameContentLoaded;
             this.OnGameExiting = onGameExiting;
-        }
-
-        /// <summary>Create a game instance for a local player.</summary>
-        /// <param name="playerIndex">The player index.</param>
-        /// <param name="instanceIndex">The instance index.</param>
-        public override Game1 CreateGameInstance(PlayerIndex playerIndex = PlayerIndex.One, int instanceIndex = 0)
-        {
-            return new SGame(playerIndex, instanceIndex, this.OnGameContentLoaded);
         }
 
         /// <inheritdoc />
