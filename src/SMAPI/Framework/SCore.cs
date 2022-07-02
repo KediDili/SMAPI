@@ -14,7 +14,6 @@ using StardewModdingAPI.Framework.Serialization;
 using StardewModdingAPI.Internal;
 using StardewModdingAPI.Toolkit;
 using StardewModdingAPI.Toolkit.Utilities;
-using StardewModdingAPI.Utilities;
 using StardewValley;
 
 namespace StardewModdingAPI.Framework
@@ -33,9 +32,6 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>The core logger and monitor for SMAPI.</summary>
         private Monitor Monitor => this.LogManager.Monitor;
-
-        /// <summary>Encapsulates access to SMAPI core translations.</summary>
-        private readonly Translator Translator = new();
 
         /// <summary>The SMAPI configuration settings.</summary>
         private readonly SConfig Settings;
@@ -96,7 +92,6 @@ namespace StardewModdingAPI.Framework
                 this.Settings.OverrideDeveloperMode(developerMode.Value);
 
             this.LogManager = new LogManager(logPath: logPath, colorConfig: this.Settings.ConsoleColors, writeToConsole: writeToConsole, verboseLogging: this.Settings.VerboseLogging, isDeveloperMode: this.Settings.DeveloperMode, getScreenIdForLog: this.GetScreenIdForLog);
-            SDate.Translations = this.Translator;
 
             // log SMAPI/OS info
             this.LogManager.LogIntro(modsPath, this.Settings.GetCustomSettings());

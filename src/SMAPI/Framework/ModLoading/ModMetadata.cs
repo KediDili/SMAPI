@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using StardewModdingAPI.Framework.ModHelpers;
 using StardewModdingAPI.Toolkit.Framework.Clients.WebApi;
 using StardewModdingAPI.Toolkit.Framework.ModData;
 using StardewModdingAPI.Toolkit.Framework.UpdateData;
@@ -68,9 +67,6 @@ namespace StardewModdingAPI.Framework.ModLoading
 
         /// <inheritdoc />
         public IContentPack? ContentPack { get; private set; }
-
-        /// <inheritdoc />
-        public TranslationHelper? Translations { get; private set; }
 
         /// <inheritdoc />
         public IMonitor? Monitor { get; private set; }
@@ -146,26 +142,24 @@ namespace StardewModdingAPI.Framework.ModLoading
         }
 
         /// <inheritdoc />
-        public IModMetadata SetMod(IMod mod, TranslationHelper translations)
+        public IModMetadata SetMod(IMod mod)
         {
             if (this.ContentPack != null)
                 throw new InvalidOperationException("A mod can't be both an assembly mod and content pack.");
 
             this.Mod = mod;
             this.Monitor = mod.Monitor;
-            this.Translations = translations;
             return this;
         }
 
         /// <inheritdoc />
-        public IModMetadata SetMod(IContentPack contentPack, IMonitor monitor, TranslationHelper translations)
+        public IModMetadata SetMod(IContentPack contentPack, IMonitor monitor)
         {
             if (this.Mod != null)
                 throw new InvalidOperationException("A mod can't be both an assembly mod and content pack.");
 
             this.ContentPack = contentPack;
             this.Monitor = monitor;
-            this.Translations = translations;
             return this;
         }
 

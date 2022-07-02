@@ -130,9 +130,6 @@ for folder in ${folders[@]}; do
         cp "$smapiBin/$name" "$bundlePath"
     done
 
-    # bundle i18n
-    cp -r "$smapiBin/i18n" "$bundlePath/smapi-internal"
-
     # bundle smapi-internal
     for name in "0Harmony.dll" "0Harmony.xml" "Mono.Cecil.dll" "Mono.Cecil.Mdb.dll" "Mono.Cecil.Pdb.dll" "MonoMod.Common.dll" "Newtonsoft.Json.dll" "Pathoschild.Http.Client.dll" "Pintail.dll" "TMXTile.dll" "SMAPI.Toolkit.dll" "SMAPI.Toolkit.pdb" "SMAPI.Toolkit.xml" "SMAPI.Toolkit.CoreInterfaces.dll" "SMAPI.Toolkit.CoreInterfaces.pdb" "SMAPI.Toolkit.CoreInterfaces.xml" "System.Net.Http.Formatting.dll"; do
         cp "$smapiBin/$name" "$bundlePath/smapi-internal"
@@ -166,9 +163,6 @@ for folder in ${folders[@]}; do
         cp "$fromPath/$modName.dll" "$targetPath"
         cp "$fromPath/$modName.pdb" "$targetPath"
         cp "$fromPath/manifest.json" "$targetPath"
-        if [ -d "$fromPath/i18n" ]; then
-            cp -r "$fromPath/i18n" "$targetPath"
-        fi
     done
 done
 

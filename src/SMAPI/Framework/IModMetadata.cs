@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using StardewModdingAPI.Framework.ModHelpers;
 using StardewModdingAPI.Framework.ModLoading;
 using StardewModdingAPI.Toolkit.Framework.Clients.WebApi;
 using StardewModdingAPI.Toolkit.Framework.ModData;
@@ -53,9 +52,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>The content pack instance (if loaded and <see cref="IModInfo.IsContentPack"/> is true).</summary>
         IContentPack? ContentPack { get; }
 
-        /// <summary>The translations for this mod (if loaded).</summary>
-        TranslationHelper? Translations { get; }
-
         /// <summary>Writes messages to the console and log file as this mod.</summary>
         IMonitor? Monitor { get; }
 
@@ -94,14 +90,12 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>Set the mod instance.</summary>
         /// <param name="mod">The mod instance to set.</param>
-        /// <param name="translations">The translations for this mod (if loaded).</param>
-        IModMetadata SetMod(IMod mod, TranslationHelper translations);
+        IModMetadata SetMod(IMod mod);
 
         /// <summary>Set the mod instance.</summary>
         /// <param name="contentPack">The contentPack instance to set.</param>
         /// <param name="monitor">Writes messages to the console and log file.</param>
-        /// <param name="translations">The translations for this mod (if loaded).</param>
-        IModMetadata SetMod(IContentPack contentPack, IMonitor monitor, TranslationHelper translations);
+        IModMetadata SetMod(IContentPack contentPack, IMonitor monitor);
 
         /// <summary>Set the mod-provided API instance.</summary>
         /// <param name="api">The mod-provided API.</param>

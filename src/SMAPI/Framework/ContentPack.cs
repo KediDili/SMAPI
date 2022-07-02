@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using StardewModdingAPI.Framework.ModHelpers;
 using StardewModdingAPI.Toolkit.Serialization;
 using StardewModdingAPI.Toolkit.Utilities;
 using StardewModdingAPI.Toolkit.Utilities.PathLookups;
@@ -29,12 +28,6 @@ namespace StardewModdingAPI.Framework
         /// <inheritdoc />
         public IManifest Manifest { get; }
 
-        /// <inheritdoc />
-        public ITranslationHelper Translation => this.TranslationImpl;
-
-        /// <summary>The underlying translation helper.</summary>
-        internal TranslationHelper TranslationImpl { get; set; }
-
 
         /*********
         ** Public methods
@@ -42,14 +35,12 @@ namespace StardewModdingAPI.Framework
         /// <summary>Construct an instance.</summary>
         /// <param name="directoryPath">The full path to the content pack's folder.</param>
         /// <param name="manifest">The content pack's manifest.</param>
-        /// <param name="translation">Provides translations stored in the content pack's <c>i18n</c> folder.</param>
         /// <param name="jsonHelper">Encapsulates SMAPI's JSON file parsing.</param>
         /// <param name="fileLookup">A lookup for files within the <paramref name="directoryPath"/>.</param>
-        public ContentPack(string directoryPath, IManifest manifest, TranslationHelper translation, JsonHelper jsonHelper, IFileLookup fileLookup)
+        public ContentPack(string directoryPath, IManifest manifest, JsonHelper jsonHelper, IFileLookup fileLookup)
         {
             this.DirectoryPath = directoryPath;
             this.Manifest = manifest;
-            this.TranslationImpl = translation;
             this.JsonHelper = jsonHelper;
             this.FileLookup = fileLookup;
         }
