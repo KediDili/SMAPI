@@ -9,9 +9,6 @@ namespace StardewModdingAPI
         /// <summary>The full path to the mod's folder.</summary>
         string DirectoryPath { get; }
 
-        /// <summary>An API for managing content packs.</summary>
-        IContentPackHelper ContentPacks { get; }
-
         /// <summary>An API for reading and writing persistent mod data.</summary>
         /// <remarks>This API is intended for persisting internal mod data; see also <see cref="ModContent"/> which is intended for reading content assets (like game data, images, etc).</remarks>
         IDataHelper Data { get; }

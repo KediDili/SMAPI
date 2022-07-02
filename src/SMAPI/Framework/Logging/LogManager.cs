@@ -269,12 +269,11 @@ namespace StardewModdingAPI.Framework.Logging
         }
 
         /// <summary>Log info about loaded mods.</summary>
-        /// <param name="loaded">The full list of loaded content packs and mods.</param>
-        /// <param name="loadedContentPacks">The loaded content packs.</param>
+        /// <param name="loaded">The full list of loaded mods.</param>
         /// <param name="loadedMods">The loaded mods.</param>
         /// <param name="skippedMods">The mods which could not be loaded.</param>
         /// <param name="logParanoidWarnings">Whether to log issues for mods which directly use potentially sensitive .NET APIs like file or shell access.</param>
-        public void LogModInfo(IModMetadata[] loaded, IModMetadata[] loadedContentPacks, IModMetadata[] loadedMods, IModMetadata[] skippedMods, bool logParanoidWarnings)
+        public void LogModInfo(IModMetadata[] loaded, IModMetadata[] loadedMods, IModMetadata[] skippedMods, bool logParanoidWarnings)
         {
             // log loaded mods
             this.Monitor.Log($"Loaded {loadedMods.Length} mods" + (loadedMods.Length > 0 ? ":" : "."), LogLevel.Info);
@@ -290,27 +289,6 @@ namespace StardewModdingAPI.Framework.Logging
             }
 
             this.Monitor.Newline();
-
-            // log loaded content packs
-            if (loadedContentPacks.Any())
-            {
-                string? GetModDisplayName(string id) => loadedMods.FirstOrDefault(p => p.HasID(id))?.DisplayName;
-
-                this.Monitor.Log($"Loaded {loadedContentPacks.Length} content packs:", LogLevel.Info);
-                foreach (IModMetadata metadata in loadedContentPacks.OrderBy(p => p.DisplayName))
-                {
-                    IManifest manifest = metadata.Manifest;
-                    this.Monitor.Log(
-                        $"   {metadata.DisplayName} {manifest.Version}"
-                        + (!string.IsNullOrWhiteSpace(manifest.Author) ? $" by {manifest.Author}" : "")
-                        + $" | for {GetModDisplayName(metadata.Manifest.ContentPackFor!.UniqueID)}"
-                        + (!string.IsNullOrWhiteSpace(manifest.Description) ? $" | {manifest.Description}" : ""),
-                        LogLevel.Info
-                    );
-                }
-
-                this.Monitor.Newline();
-            }
 
             // log mod warnings
             this.LogModWarnings(loaded, skippedMods, logParanoidWarnings);

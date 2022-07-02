@@ -66,9 +66,6 @@ namespace StardewModdingAPI.Framework.ModLoading
         public IMod? Mod { get; private set; }
 
         /// <inheritdoc />
-        public IContentPack? ContentPack { get; private set; }
-
-        /// <inheritdoc />
         public IMonitor? Monitor { get; private set; }
 
         /// <inheritdoc />
@@ -76,14 +73,6 @@ namespace StardewModdingAPI.Framework.ModLoading
 
         /// <inheritdoc />
         public ModEntryModel? UpdateCheckData { get; private set; }
-
-        /// <inheritdoc />
-        [MemberNotNullWhen(true, nameof(ModMetadata.ContentPack))]
-        [SuppressMessage("ReSharper", "ConditionalAccessQualifierIsNonNullableAccordingToAPIContract", Justification = "The manifest may be null for broken mods while loading.")]
-        public bool IsContentPack => this.Manifest?.ContentPackFor != null;
-
-        /// <summary>The fake content packs created by this mod, if any.</summary>
-        public ISet<WeakReference<ContentPack>> FakeContentPacks { get; } = new HashSet<WeakReference<ContentPack>>();
 
 
         /*********
@@ -144,22 +133,8 @@ namespace StardewModdingAPI.Framework.ModLoading
         /// <inheritdoc />
         public IModMetadata SetMod(IMod mod)
         {
-            if (this.ContentPack != null)
-                throw new InvalidOperationException("A mod can't be both an assembly mod and content pack.");
-
             this.Mod = mod;
             this.Monitor = mod.Monitor;
-            return this;
-        }
-
-        /// <inheritdoc />
-        public IModMetadata SetMod(IContentPack contentPack, IMonitor monitor)
-        {
-            if (this.Mod != null)
-                throw new InvalidOperationException("A mod can't be both an assembly mod and content pack.");
-
-            this.ContentPack = contentPack;
-            this.Monitor = monitor;
             return this;
         }
 
@@ -252,21 +227,6 @@ namespace StardewModdingAPI.Framework.ModLoading
             return Path.Combine(rootFolderName, this.RelativeDirectoryPath);
         }
 
-        /// <summary>Get the currently live fake content packs created by this mod.</summary>
-        public IEnumerable<ContentPack> GetFakeContentPacks()
-        {
-            foreach (var reference in this.FakeContentPacks.ToArray())
-            {
-                if (!reference.TryGetTarget(out ContentPack? pack))
-                {
-                    this.FakeContentPacks.Remove(reference);
-                    continue;
-                }
-
-                yield return pack;
-            }
-        }
-
 
         /*********
         ** Private methods
@@ -285,10 +245,6 @@ namespace StardewModdingAPI.Framework.ModLoading
                     if (!string.IsNullOrWhiteSpace(entry.UniqueID))
                         ids[entry.UniqueID] = entry.IsRequired;
                 }
-
-                // yield content pack parent
-                if (!string.IsNullOrWhiteSpace(this.Manifest.ContentPackFor?.UniqueID))
-                    ids[this.Manifest.ContentPackFor.UniqueID] = true;
             }
 
             return ids;

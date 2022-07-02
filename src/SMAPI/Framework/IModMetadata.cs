@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using StardewModdingAPI.Framework.ModLoading;
 using StardewModdingAPI.Toolkit.Framework.Clients.WebApi;
@@ -49,9 +48,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>The mod instance (if loaded and <see cref="IModInfo.IsContentPack"/> is false).</summary>
         IMod? Mod { get; }
 
-        /// <summary>The content pack instance (if loaded and <see cref="IModInfo.IsContentPack"/> is true).</summary>
-        IContentPack? ContentPack { get; }
-
         /// <summary>Writes messages to the console and log file as this mod.</summary>
         IMonitor? Monitor { get; }
 
@@ -60,9 +56,6 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>The update-check metadata for this mod (if any).</summary>
         ModEntryModel? UpdateCheckData { get; }
-
-        /// <summary>The fake content packs created by this mod, if any.</summary>
-        ISet<WeakReference<ContentPack>> FakeContentPacks { get; }
 
 
         /*********
@@ -91,11 +84,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>Set the mod instance.</summary>
         /// <param name="mod">The mod instance to set.</param>
         IModMetadata SetMod(IMod mod);
-
-        /// <summary>Set the mod instance.</summary>
-        /// <param name="contentPack">The contentPack instance to set.</param>
-        /// <param name="monitor">Writes messages to the console and log file.</param>
-        IModMetadata SetMod(IContentPack contentPack, IMonitor monitor);
 
         /// <summary>Set the mod-provided API instance.</summary>
         /// <param name="api">The mod-provided API.</param>
@@ -137,8 +125,5 @@ namespace StardewModdingAPI.Framework
 
         /// <summary>Get a relative path which includes the root folder name.</summary>
         string GetRelativePathWithRoot();
-
-        /// <summary>Get the currently live fake content packs created by this mod.</summary>
-        IEnumerable<ContentPack> GetFakeContentPacks();
     }
 }

@@ -44,15 +44,9 @@ namespace StardewModdingAPI.Framework
         }
 
         /// <summary>Get metadata for all loaded mods.</summary>
-        /// <param name="assemblyMods">Whether to include SMAPI mods.</param>
-        /// <param name="contentPacks">Whether to include content pack mods.</param>
-        public IEnumerable<IModMetadata> GetAll(bool assemblyMods = true, bool contentPacks = true)
+        public IEnumerable<IModMetadata> GetAll()
         {
             IEnumerable<IModMetadata> query = this.Mods;
-            if (!assemblyMods)
-                query = query.Where(p => p.IsContentPack);
-            if (!contentPacks)
-                query = query.Where(p => !p.IsContentPack);
 
             return query;
         }

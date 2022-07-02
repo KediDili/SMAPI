@@ -30,10 +30,6 @@ namespace StardewModdingAPI.Toolkit.Serialization.Models
         /// <summary>The name of the DLL in the directory that has the <c>Entry</c> method. Mutually exclusive with <see cref="ContentPackFor"/>.</summary>
         public string? EntryDll { get; }
 
-        /// <summary>The mod which will read this as a content pack. Mutually exclusive with <see cref="Manifest.EntryDll"/>.</summary>
-        [JsonConverter(typeof(ManifestContentPackForConverter))]
-        public IManifestContentPackFor? ContentPackFor { get; }
-
         /// <summary>The other mods that must be loaded before this mod.</summary>
         [JsonConverter(typeof(ManifestDependencyArrayConverter))]
         public IManifestDependency[] Dependencies { get; }
@@ -53,30 +49,6 @@ namespace StardewModdingAPI.Toolkit.Serialization.Models
         ** Public methods
         *********/
         /// <summary>Construct an instance for a transitional content pack.</summary>
-        /// <param name="uniqueID">The unique mod ID.</param>
-        /// <param name="name">The mod name.</param>
-        /// <param name="author">The mod author's name.</param>
-        /// <param name="description">A brief description of the mod.</param>
-        /// <param name="version">The mod version.</param>
-        /// <param name="contentPackFor">The modID which will read this as a content pack.</param>
-        public Manifest(string uniqueID, string name, string author, string description, ISemanticVersion version, string? contentPackFor = null)
-            : this(
-                uniqueId: uniqueID,
-                name: name,
-                author: author,
-                description: description,
-                version: version,
-                minimumApiVersion: null,
-                entryDll: null,
-                contentPackFor: contentPackFor != null
-                    ? new ManifestContentPackFor(contentPackFor, null)
-                    : null,
-                dependencies: null,
-                updateKeys: null
-            )
-        { }
-
-        /// <summary>Construct an instance for a transitional content pack.</summary>
         /// <param name="uniqueId">The unique mod ID.</param>
         /// <param name="name">The mod name.</param>
         /// <param name="author">The mod author's name.</param>
@@ -84,11 +56,10 @@ namespace StardewModdingAPI.Toolkit.Serialization.Models
         /// <param name="version">The mod version.</param>
         /// <param name="minimumApiVersion">The minimum SMAPI version required by this mod, if any.</param>
         /// <param name="entryDll">The name of the DLL in the directory that has the <c>Entry</c> method. Mutually exclusive with <see cref="ContentPackFor"/>.</param>
-        /// <param name="contentPackFor">The modID which will read this as a content pack.</param>
         /// <param name="dependencies">The other mods that must be loaded before this mod.</param>
         /// <param name="updateKeys">The namespaced mod IDs to query for updates (like <c>Nexus:541</c>).</param>
         [JsonConstructor]
-        public Manifest(string uniqueId, string name, string author, string description, ISemanticVersion version, ISemanticVersion? minimumApiVersion, string? entryDll, IManifestContentPackFor? contentPackFor, IManifestDependency[]? dependencies, string[]? updateKeys)
+        public Manifest(string uniqueId, string name, string author, string description, ISemanticVersion version, ISemanticVersion? minimumApiVersion, string? entryDll, IManifestDependency[]? dependencies, string[]? updateKeys)
         {
             this.UniqueID = this.NormalizeWhitespace(uniqueId);
             this.Name = this.NormalizeWhitespace(name);
@@ -97,7 +68,6 @@ namespace StardewModdingAPI.Toolkit.Serialization.Models
             this.Version = version;
             this.MinimumApiVersion = minimumApiVersion;
             this.EntryDll = this.NormalizeWhitespace(entryDll);
-            this.ContentPackFor = contentPackFor;
             this.Dependencies = dependencies ?? Array.Empty<IManifestDependency>();
             this.UpdateKeys = updateKeys ?? Array.Empty<string>();
         }

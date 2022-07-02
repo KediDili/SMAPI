@@ -175,15 +175,8 @@ namespace StardewModdingAPI.Toolkit.Framework.ModScanning
             // get mod type
             ModType type;
             {
-                bool isContentPack = !string.IsNullOrWhiteSpace(manifest?.ContentPackFor?.UniqueID);
                 bool isSmapi = !string.IsNullOrWhiteSpace(manifest?.EntryDll);
-
-                if (isContentPack == isSmapi)
-                    type = ModType.Invalid;
-                else if (isContentPack)
-                    type = ModType.ContentPack;
-                else
-                    type = ModType.Smapi;
+                type = ModType.Smapi;
             }
 
             // build result
