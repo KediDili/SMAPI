@@ -15,6 +15,7 @@ using StardewModdingAPI.Internal;
 using StardewModdingAPI.Toolkit;
 using StardewModdingAPI.Toolkit.Utilities;
 using StardewModdingAPI.Utilities;
+using StardewValley;
 
 namespace StardewModdingAPI.Framework
 {
@@ -46,7 +47,7 @@ namespace StardewModdingAPI.Framework
         ** Higher-level components
         ****/
         /// <summary>The underlying game instance.</summary>
-        private SGameRunner Game = null!; // initialized very early
+        private GameRunner Game = null!; // initialized very early
 
         /// <summary>Tracks the installed mods.</summary>
         /// <remarks>This is initialized after the game starts.</remarks>
@@ -136,9 +137,7 @@ namespace StardewModdingAPI.Framework
                 AppDomain.CurrentDomain.UnhandledException += (_, e) => this.Monitor.Log($"Critical app domain exception: {e.ExceptionObject}", LogLevel.Error);
 
                 // override game
-                this.Game = new SGameRunner(
-                    onGameExiting: this.OnGameExiting
-                );
+                this.Game = new GameRunner();
                 StardewValley.GameRunner.instance = this.Game;
 
                 // set window titles
@@ -226,12 +225,6 @@ namespace StardewModdingAPI.Framework
         /*********
         ** Private methods
         *********/
-        /// <summary>Raised before the game exits.</summary>
-        private void OnGameExiting()
-        {
-            this.Dispose();
-        }
-
         /// <summary>Set the titles for the game and console windows.</summary>
         private void UpdateWindowTitles()
         {
