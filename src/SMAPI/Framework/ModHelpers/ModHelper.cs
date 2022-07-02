@@ -13,9 +13,6 @@ namespace StardewModdingAPI.Framework.ModHelpers
         public string DirectoryPath { get; }
 
         /// <inheritdoc />
-        public IDataHelper Data { get; }
-
-        /// <inheritdoc />
         public IModRegistry ModRegistry { get; }
 
 
@@ -25,11 +22,10 @@ namespace StardewModdingAPI.Framework.ModHelpers
         /// <summary>Construct an instance.</summary>
         /// <param name="mod">The mod using this instance.</param>
         /// <param name="modDirectory">The full path to the mod's folder.</param>
-        /// <param name="dataHelper">An API for reading and writing persistent mod data.</param>
         /// <param name="modRegistry">an API for fetching metadata about loaded mods.</param>
         /// <exception cref="ArgumentNullException">An argument is null or empty.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="modDirectory"/> path does not exist on disk.</exception>
-        public ModHelper(IModMetadata mod, string modDirectory, IDataHelper dataHelper, IModRegistry modRegistry)
+        public ModHelper(IModMetadata mod, string modDirectory, IModRegistry modRegistry)
             : base(mod)
         {
             // validate directory
@@ -40,27 +36,7 @@ namespace StardewModdingAPI.Framework.ModHelpers
 
             // initialize
             this.DirectoryPath = modDirectory;
-            this.Data = dataHelper ?? throw new ArgumentNullException(nameof(dataHelper));
             this.ModRegistry = modRegistry ?? throw new ArgumentNullException(nameof(modRegistry));
-        }
-
-        /****
-        ** Mod config file
-        ****/
-        /// <inheritdoc />
-        public TConfig ReadConfig<TConfig>()
-            where TConfig : class, new()
-        {
-            TConfig config = this.Data.ReadJsonFile<TConfig>("config.json") ?? new TConfig();
-            this.WriteConfig(config); // create file or fill in missing fields
-            return config;
-        }
-
-        /// <inheritdoc />
-        public void WriteConfig<TConfig>(TConfig config)
-            where TConfig : class, new()
-        {
-            this.Data.WriteJsonFile("config.json", config);
         }
 
         /****
