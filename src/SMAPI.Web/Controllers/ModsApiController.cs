@@ -1,16 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using StardewModdingAPI.Toolkit;
 using StardewModdingAPI.Toolkit.Framework.Clients.WebApi;
 using StardewModdingAPI.Toolkit.Framework.Clients.Wiki;
-using StardewModdingAPI.Toolkit.Framework.ModData;
 using StardewModdingAPI.Toolkit.Framework.UpdateData;
 using StardewModdingAPI.Web.Framework;
 using StardewModdingAPI.Web.Framework.Caching;
@@ -46,9 +43,6 @@ namespace StardewModdingAPI.Web.Controllers
         /// <summary>The config settings for mod update checks.</summary>
         private readonly IOptions<ModUpdateCheckConfig> Config;
 
-        /// <summary>The internal mod metadata list.</summary>
-        private readonly ModDatabase ModDatabase;
-
 
         /*********
         ** Public methods
@@ -65,8 +59,6 @@ namespace StardewModdingAPI.Web.Controllers
         /// <param name="nexus">The Nexus API client.</param>
         public ModsApiController(IWebHostEnvironment environment, IWikiCacheRepository wikiCache, IModCacheRepository modCache, IOptions<ModUpdateCheckConfig> config, IChucklefishClient chucklefish, ICurseForgeClient curseForge, IGitHubClient github, IModDropClient modDrop, INexusClient nexus)
         {
-            this.ModDatabase = new ModToolkit().GetModDatabase(Path.Combine(environment.WebRootPath, "SMAPI.metadata.json"));
-
             this.WikiCache = wikiCache;
             this.ModCache = modCache;
             this.Config = config;
@@ -125,9 +117,8 @@ namespace StardewModdingAPI.Web.Controllers
         private async Task<ModEntryModel> GetModData(ModSearchEntryModel search, WikiModEntry[] wikiData, bool includeExtendedMetadata, ISemanticVersion? apiVersion)
         {
             // cross-reference data
-            ModDataRecord? record = this.ModDatabase.Get(search.ID);
             WikiModEntry? wikiEntry = wikiData.FirstOrDefault(entry => entry.ID.Contains(search.ID.Trim(), StringComparer.OrdinalIgnoreCase));
-            UpdateKey[] updateKeys = this.GetUpdateKeys(search.UpdateKeys, record, wikiEntry).ToArray();
+            UpdateKey[] updateKeys = this.GetUpdateKeys(search.UpdateKeys, wikiEntry).ToArray();
             ModOverrideConfig? overrides = this.Config.Value.ModOverrides.FirstOrDefault(p => p.ID.Equals(search.ID.Trim(), StringComparison.OrdinalIgnoreCase));
             bool allowNonStandardVersions = overrides?.AllowNonStandardVersions ?? false;
 
@@ -233,7 +224,7 @@ namespace StardewModdingAPI.Web.Controllers
 
             // add extended metadata
             if (includeExtendedMetadata)
-                result.Metadata = new ModExtendedMetadataModel(wikiEntry, record, main: main, optional: optional, unofficial: unofficial, unofficialForBeta: unofficialForBeta);
+                result.Metadata = new ModExtendedMetadataModel(wikiEntry, main: main, optional: optional, unofficial: unofficial, unofficialForBeta: unofficialForBeta);
 
             // add result
             result.Errors = errors.ToArray();
@@ -291,12 +282,11 @@ namespace StardewModdingAPI.Web.Controllers
 
         /// <summary>Get update keys based on the available mod metadata, while maintaining the precedence order.</summary>
         /// <param name="specifiedKeys">The specified update keys.</param>
-        /// <param name="record">The mod's entry in SMAPI's internal database.</param>
         /// <param name="entry">The mod's entry in the wiki list.</param>
-        private IEnumerable<UpdateKey> GetUpdateKeys(string[]? specifiedKeys, ModDataRecord? record, WikiModEntry? entry)
+        private IEnumerable<UpdateKey> GetUpdateKeys(string[]? specifiedKeys, WikiModEntry? entry)
         {
             // get unique update keys
-            List<UpdateKey> updateKeys = this.GetUnfilteredUpdateKeys(specifiedKeys, record, entry)
+            List<UpdateKey> updateKeys = this.GetUnfilteredUpdateKeys(specifiedKeys, entry)
                 .Select(UpdateKey.Parse)
                 .Distinct()
                 .ToList();
@@ -326,22 +316,14 @@ namespace StardewModdingAPI.Web.Controllers
 
         /// <summary>Get every available update key based on the available mod metadata, including duplicates and keys which should be filtered.</summary>
         /// <param name="specifiedKeys">The specified update keys.</param>
-        /// <param name="record">The mod's entry in SMAPI's internal database.</param>
         /// <param name="entry">The mod's entry in the wiki list.</param>
-        private IEnumerable<string> GetUnfilteredUpdateKeys(string[]? specifiedKeys, ModDataRecord? record, WikiModEntry? entry)
+        private IEnumerable<string> GetUnfilteredUpdateKeys(string[]? specifiedKeys, WikiModEntry? entry)
         {
             // specified update keys
             foreach (string key in specifiedKeys ?? Array.Empty<string>())
             {
                 if (!string.IsNullOrWhiteSpace(key))
                     yield return key.Trim();
-            }
-
-            // default update key
-            {
-                string? defaultKey = record?.GetDefaultUpdateKey();
-                if (!string.IsNullOrWhiteSpace(defaultKey))
-                    yield return defaultKey;
             }
 
             // wiki metadata

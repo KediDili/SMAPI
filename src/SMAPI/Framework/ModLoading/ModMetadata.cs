@@ -42,16 +42,13 @@ namespace StardewModdingAPI.Framework.ModLoading
         public IManifest Manifest { get; }
 
         /// <inheritdoc />
-        public ModDataRecordVersionedFields? DataRecord { get; }
-
-        /// <inheritdoc />
         public ModMetadataStatus Status { get; private set; }
 
         /// <inheritdoc />
         public ModFailReason? FailReason { get; private set; }
 
         /// <inheritdoc />
-        public ModWarning Warnings => this.ActualWarnings & ~(this.DataRecord?.DataRecord.SuppressWarnings ?? ModWarning.None);
+        public ModWarning Warnings => this.ActualWarnings;
 
         /// <inheritdoc />
         public string? Error { get; private set; }
@@ -83,16 +80,14 @@ namespace StardewModdingAPI.Framework.ModLoading
         /// <param name="directoryPath">The mod's full directory path within the <paramref name="rootPath"/>.</param>
         /// <param name="rootPath">The root path containing mods.</param>
         /// <param name="manifest">The mod manifest.</param>
-        /// <param name="dataRecord">Metadata about the mod from SMAPI's internal data (if any).</param>
         /// <param name="isIgnored">Whether the mod folder should be ignored. This should be <c>true</c> if it was found within a folder whose name starts with a dot.</param>
-        public ModMetadata(string displayName, string directoryPath, string rootPath, IManifest? manifest, ModDataRecordVersionedFields? dataRecord, bool isIgnored)
+        public ModMetadata(string displayName, string directoryPath, string rootPath, IManifest? manifest, bool isIgnored)
         {
             this.DisplayName = displayName;
             this.DirectoryPath = directoryPath;
             this.RootPath = rootPath;
             this.RelativeDirectoryPath = PathUtilities.GetRelativePath(this.RootPath, this.DirectoryPath);
             this.Manifest = manifest!; // manifest may be null in low-level SMAPI code, but won't be null once it's received by mods via IModInfo
-            this.DataRecord = dataRecord;
             this.IsIgnored = isIgnored;
 
             this.Dependencies = new Lazy<IDictionary<string, bool>>(this.ExtractDependencies);

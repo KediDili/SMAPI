@@ -24,9 +24,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>The <see cref="DirectoryPath"/> relative to the <see cref="RootPath"/>.</summary>
         string RelativeDirectoryPath { get; }
 
-        /// <summary>Metadata about the mod from SMAPI's internal data (if any).</summary>
-        ModDataRecordVersionedFields? DataRecord { get; }
-
         /// <summary>The metadata resolution status.</summary>
         ModMetadataStatus Status { get; }
 

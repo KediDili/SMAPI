@@ -1,11 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using StardewModdingAPI.Toolkit.Framework.Clients.Wiki;
 using StardewModdingAPI.Toolkit.Framework.GameScanning;
-using StardewModdingAPI.Toolkit.Framework.ModData;
 using StardewModdingAPI.Toolkit.Framework.ModScanning;
 using StardewModdingAPI.Toolkit.Framework.UpdateData;
 using StardewModdingAPI.Toolkit.Serialization;
@@ -59,15 +56,6 @@ namespace StardewModdingAPI.Toolkit
         {
             using WikiClient client = new(this.UserAgent);
             return await client.FetchModsAsync();
-        }
-
-        /// <summary>Get SMAPI's internal mod database.</summary>
-        /// <param name="metadataPath">The file path for the SMAPI metadata file.</param>
-        public ModDatabase GetModDatabase(string metadataPath)
-        {
-            MetadataModel metadata = JsonConvert.DeserializeObject<MetadataModel>(File.ReadAllText(metadataPath)) ?? new MetadataModel();
-            ModDataRecord[] records = metadata.ModData.Select(pair => new ModDataRecord(pair.Key, pair.Value)).ToArray();
-            return new ModDatabase(records, this.GetUpdateUrl);
         }
 
         /// <summary>Extract information about all mods in the given folder.</summary>

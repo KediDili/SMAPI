@@ -4,7 +4,6 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using StardewModdingAPI.Toolkit.Framework.Clients.Wiki;
-using StardewModdingAPI.Toolkit.Framework.ModData;
 
 namespace StardewModdingAPI.Toolkit.Framework.Clients.WebApi
 {
@@ -106,12 +105,11 @@ namespace StardewModdingAPI.Toolkit.Framework.Clients.WebApi
 
         /// <summary>Construct an instance.</summary>
         /// <param name="wiki">The mod metadata from the wiki (if available).</param>
-        /// <param name="db">The mod metadata from SMAPI's internal DB (if available).</param>
         /// <param name="main">The main version.</param>
         /// <param name="optional">The latest optional version, if newer than <paramref name="main"/>.</param>
         /// <param name="unofficial">The latest unofficial version, if newer than <paramref name="main"/> and <paramref name="optional"/>.</param>
         /// <param name="unofficialForBeta">The latest unofficial version for the current Stardew Valley or SMAPI beta, if any.</param>
-        public ModExtendedMetadataModel(WikiModEntry? wiki, ModDataRecord? db, ModEntryVersionModel? main, ModEntryVersionModel? optional, ModEntryVersionModel? unofficial, ModEntryVersionModel? unofficialForBeta)
+        public ModExtendedMetadataModel(WikiModEntry? wiki, ModEntryVersionModel? main, ModEntryVersionModel? optional, ModEntryVersionModel? unofficial, ModEntryVersionModel? unofficialForBeta)
         {
             // versions
             this.Main = main;
@@ -144,13 +142,6 @@ namespace StardewModdingAPI.Toolkit.Framework.Clients.WebApi
                 this.ChangeLocalVersions = wiki.Overrides?.ChangeLocalVersions?.ToString();
                 this.ChangeRemoteVersions = wiki.Overrides?.ChangeRemoteVersions?.ToString();
                 this.ChangeUpdateKeys = wiki.Overrides?.ChangeUpdateKeys?.ToString();
-            }
-
-            // internal DB data
-            if (db != null)
-            {
-                this.ID = this.ID.Union(db.FormerIDs).ToArray();
-                this.Name ??= db.DisplayName;
             }
         }
 
