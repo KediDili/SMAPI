@@ -9,9 +9,6 @@ namespace StardewModdingAPI
         ** Accessors
         *********/
         /// <inheritdoc />
-        public IModHelper Helper { get; internal set; } = null!;
-
-        /// <inheritdoc />
         public IMonitor Monitor { get; internal set; } = null!;
 
         /// <inheritdoc />
@@ -22,7 +19,7 @@ namespace StardewModdingAPI
         ** Public methods
         *********/
         /// <inheritdoc />
-        public abstract void Entry(IModHelper helper);
+        public abstract void Entry();
 
         /// <inheritdoc />
         public virtual object? GetApi()
@@ -33,7 +30,6 @@ namespace StardewModdingAPI
         /// <summary>Release or reset unmanaged resources.</summary>
         public void Dispose()
         {
-            (this.Helper as IDisposable)?.Dispose(); // deliberately do this outside overridable dispose method so mods don't accidentally suppress it
             this.Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -49,7 +45,6 @@ namespace StardewModdingAPI
         /// <summary>Destruct the instance.</summary>
         ~Mod()
         {
-            (this.Helper as IDisposable)?.Dispose(); // deliberately do this outside overridable dispose method so mods don't accidentally suppress it
             this.Dispose(false);
         }
     }
