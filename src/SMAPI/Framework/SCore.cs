@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Security;
 #if SMAPI_FOR_WINDOWS
@@ -45,11 +44,6 @@ namespace StardewModdingAPI.Framework
         /// <summary>The underlying game instance.</summary>
         private GameRunner Game = null!; // initialized very early
 
-        /// <summary>Tracks the installed mods.</summary>
-        /// <remarks>This is initialized after the game starts.</remarks>
-        private readonly ModRegistry ModRegistry = new();
-
-
         /****
         ** State
         ****/
@@ -68,17 +62,14 @@ namespace StardewModdingAPI.Framework
         ** Public methods
         *********/
         /// <summary>Construct an instance.</summary>
-        /// <param name="modsPath">The path to search for mods.</param>
         /// <param name="writeToConsole">Whether to output log messages to the console.</param>
         /// <param name="developerMode">Whether to enable development features, or <c>null</c> to use the value from the settings file.</param>
-        public SCore(string modsPath, bool writeToConsole, bool? developerMode)
+        public SCore(bool writeToConsole, bool? developerMode)
         {
             SCore.Instance = this;
 
             // init paths
-            this.VerifyPath(modsPath);
             this.VerifyPath(Constants.LogDir);
-            Constants.ModsPath = modsPath;
 
             // init log file
             this.PurgeNormalLogs();
@@ -94,7 +85,7 @@ namespace StardewModdingAPI.Framework
             this.LogManager = new LogManager(logPath: logPath, colorConfig: this.Settings.ConsoleColors, writeToConsole: writeToConsole, verboseLogging: this.Settings.VerboseLogging, isDeveloperMode: this.Settings.DeveloperMode, getScreenIdForLog: this.GetScreenIdForLog);
 
             // log SMAPI/OS info
-            this.LogManager.LogIntro(modsPath, this.Settings.GetCustomSettings());
+            this.LogManager.LogIntro(this.Settings.GetCustomSettings());
 
             // validate platform
 #if SMAPI_FOR_WINDOWS
@@ -195,19 +186,6 @@ namespace StardewModdingAPI.Framework
             this.IsDisposed = true;
             this.Monitor.Log("Disposing...");
 
-            // dispose mod data
-            foreach (IModMetadata mod in this.ModRegistry.GetAll())
-            {
-                try
-                {
-                    (mod.Mod as IDisposable)?.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    mod.LogAsMod($"Mod failed during disposal: {ex.GetLogSummary()}.", LogLevel.Warn);
-                }
-            }
-
             // dispose core components
             this.Game?.Dispose();
             this.LogManager.Dispose(); // dispose last to allow for any last-second log messages
@@ -225,13 +203,6 @@ namespace StardewModdingAPI.Framework
         {
             string consoleTitle = $"SMAPI {Constants.ApiVersion} - running Stardew Valley {Constants.GameVersion}";
             string gameTitle = $"Stardew Valley {Constants.GameVersion} - running SMAPI {Constants.ApiVersion}";
-
-            if (this.ModRegistry.AreAllModsLoaded)
-            {
-                int modsLoaded = this.ModRegistry.GetAll().Count();
-                consoleTitle += $" with {modsLoaded} mods";
-                gameTitle += $" with {modsLoaded} mods";
-            }
 
             this.Game.Window.Title = gameTitle;
             this.LogManager.SetConsoleTitle(consoleTitle);

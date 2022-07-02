@@ -103,10 +103,9 @@ namespace StardewModdingAPI
 
             // get mods path
             bool? developerMode = null;
-            string modsPath = Constants.DefaultModsPath;
 
             // load SMAPI
-            using SCore core = new(modsPath, writeToConsole, developerMode);
+            using SCore core = new(writeToConsole, developerMode);
             core.RunInteractively();
         }
 

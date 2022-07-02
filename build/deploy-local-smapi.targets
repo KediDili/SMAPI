@@ -8,7 +8,7 @@ This assumes `find-game-folder.targets` has already been imported and validated.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Target Name="CopySmapiFiles" AfterTargets="AfterBuild">
-    <CallTarget Targets="CopySMAPI;CopyDefaultMods" />
+    <CallTarget Targets="CopySMAPI" />
   </Target>
   <Target Name="CopySMAPI" Condition="'$(MSBuildProjectName)' == 'SMAPI'">
     <!-- SMAPI -->
@@ -49,13 +49,6 @@ This assumes `find-game-folder.targets` has already been imported and validated.
     <Copy SourceFiles="$(TargetDir)\assets\runtimeconfig.json" DestinationFiles="$(GamePath)\StardewModdingAPI.runtimeconfig.json" />
     <Copy SourceFiles="$(TargetDir)\assets\windows-exe-config.xml" DestinationFiles="$(GamePath)\StardewModdingAPI.exe.config" Condition="$(OS) == 'Windows_NT'" />
     <Copy SourceFiles="$(GamePath)\Stardew Valley.deps.json" DestinationFiles="$(GamePath)\StardewModdingAPI.deps.json" Condition="!Exists('$(GamePath)\StardewModdingAPI.deps.json')" />
-  </Target>
-
-  <!-- bundled mods -->
-  <Target Name="CopyDefaultMods" Condition="'$(MSBuildProjectName)' == 'SMAPI.Mods.ConsoleCommands' OR '$(MSBuildProjectName)' == 'SMAPI.Mods.ErrorHandler' OR '$(MSBuildProjectName)' == 'SMAPI.Mods.SaveBackup'">
-    <Copy SourceFiles="$(TargetDir)\$(TargetName).dll" DestinationFolder="$(GamePath)\Mods\$(AssemblyName)" />
-    <Copy SourceFiles="$(TargetDir)\$(TargetName).pdb" DestinationFolder="$(GamePath)\Mods\$(AssemblyName)" Condition="Exists('$(TargetDir)\$(TargetName).pdb')" />
-    <Copy SourceFiles="$(TargetDir)\manifest.json" DestinationFolder="$(GamePath)\Mods\$(AssemblyName)" />
   </Target>
 
   <!-- toolkit -->

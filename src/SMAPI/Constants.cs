@@ -112,12 +112,6 @@ namespace StardewModdingAPI
         /// <summary>The file path which stores the detected update version for the next run.</summary>
         internal static string UpdateMarker => Path.Combine(Constants.InternalFilesPath, "StardewModdingAPI.update.marker");
 
-        /// <summary>The default full path to search for mods.</summary>
-        internal static string DefaultModsPath { get; } = Path.Combine(Constants.GamePath, "Mods");
-
-        /// <summary>The actual full path to search for mods.</summary>
-        internal static string ModsPath { get; set; } = null!; // initialized early during SMAPI startup
-
         /// <summary>The game's current semantic version.</summary>
         internal static ISemanticVersion GameVersion { get; } = new GameVersion(Game1.version);
 

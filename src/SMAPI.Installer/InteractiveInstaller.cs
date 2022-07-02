@@ -12,7 +12,6 @@ using StardewModdingAPI.Internal.ConsoleWriting;
 using StardewModdingAPI.Toolkit;
 using StardewModdingAPI.Toolkit.Framework;
 using StardewModdingAPI.Toolkit.Framework.GameScanning;
-using StardewModdingAPI.Toolkit.Framework.ModScanning;
 using StardewModdingAPI.Toolkit.Utilities;
 
 namespace StardewModdingApi.Installer
@@ -26,18 +25,10 @@ namespace StardewModdingApi.Installer
         /// <summary>The absolute path to the directory containing the files to copy into the game folder.</summary>
         private readonly string BundlePath;
 
-        /// <summary>The mod IDs which the installer should allow as bundled mods.</summary>
-        private readonly string[] BundledModIDs = {
-            "SMAPI.SaveBackup",
-            "SMAPI.ConsoleCommands",
-            "SMAPI.ErrorHandler"
-        };
-
         /// <summary>Get the absolute file or folder paths to remove when uninstalling SMAPI.</summary>
         /// <param name="installDir">The folder for Stardew Valley and SMAPI.</param>
-        /// <param name="modsDir">The folder for SMAPI mods.</param>
         [SuppressMessage("ReSharper", "StringLiteralTypo", Justification = "These are valid file names.")]
-        private IEnumerable<string> GetUninstallPaths(DirectoryInfo installDir, DirectoryInfo modsDir)
+        private IEnumerable<string> GetUninstallPaths(DirectoryInfo installDir)
         {
             string GetInstallPath(string path) => Path.Combine(installDir.FullName, path);
 
@@ -314,7 +305,7 @@ namespace StardewModdingApi.Installer
                 }
 
                 // remove old files
-                string[] removePaths = this.GetUninstallPaths(paths.GameDir, paths.ModsDir)
+                string[] removePaths = this.GetUninstallPaths(paths.GameDir)
                     .Where(path => Directory.Exists(path) || File.Exists(path))
                     .ToArray();
                 if (removePaths.Any())
@@ -392,53 +383,6 @@ namespace StardewModdingApi.Installer
                         destFileName: Path.Combine(paths.GamePath, "StardewModdingAPI.deps.json"),
                         overwrite: true
                     );
-
-                    // create mods directory (if needed)
-                    if (!paths.ModsDir.Exists)
-                    {
-                        this.PrintDebug("Creating mods directory...");
-                        paths.ModsDir.Create();
-                    }
-
-                    // add or replace bundled mods
-                    DirectoryInfo bundledModsDir = new(Path.Combine(paths.BundlePath, "Mods"));
-                    if (bundledModsDir.Exists && bundledModsDir.EnumerateDirectories().Any())
-                    {
-                        this.PrintDebug("Adding bundled mods...");
-
-                        ModFolder[] targetMods = toolkit.GetModFolders(paths.ModsPath, useCaseInsensitiveFilePaths: true).ToArray();
-                        foreach (ModFolder sourceMod in toolkit.GetModFolders(bundledModsDir.FullName, useCaseInsensitiveFilePaths: true))
-                        {
-                            // validate source mod
-                            if (sourceMod.Manifest == null)
-                            {
-                                this.PrintWarning($"   ignored invalid bundled mod {sourceMod.DisplayName}: {sourceMod.ManifestParseError}");
-                                continue;
-                            }
-                            if (!this.BundledModIDs.Contains(sourceMod.Manifest.UniqueID))
-                            {
-                                this.PrintWarning($"   ignored unknown '{sourceMod.DisplayName}' mod in the installer folder. To add mods, put them here instead: {paths.ModsPath}");
-                                continue;
-                            }
-
-                            // find target folder
-                            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract -- avoid error if the Mods folder has invalid mods, since they're not validated yet
-                            ModFolder? targetMod = targetMods.FirstOrDefault(p => p.Manifest?.UniqueID?.Equals(sourceMod.Manifest.UniqueID, StringComparison.OrdinalIgnoreCase) == true);
-                            DirectoryInfo defaultTargetFolder = new(Path.Combine(paths.ModsPath, sourceMod.Directory.Name));
-                            DirectoryInfo targetFolder = targetMod?.Directory ?? defaultTargetFolder;
-                            this.PrintDebug(targetFolder.FullName == defaultTargetFolder.FullName
-                                ? $"   adding {sourceMod.Manifest.Name}..."
-                                : $"   adding {sourceMod.Manifest.Name} to {Path.Combine(paths.ModsDir.Name, PathUtilities.GetRelativePath(paths.ModsPath, targetFolder.FullName))}..."
-                            );
-
-                            // remove existing folder
-                            if (targetFolder.Exists)
-                                this.InteractivelyDelete(targetFolder.FullName);
-
-                            // copy files
-                            this.RecursiveCopy(sourceMod.Directory, paths.ModsDir, filter: this.ShouldCopy);
-                        }
-                    }
 
                     // set SMAPI's color scheme if defined
                     if (scheme != MonitorColorScheme.AutoDetect)

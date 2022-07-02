@@ -18,9 +18,6 @@ namespace StardewModdingAPI.Installer.Framework
         /// <summary>The directory containing the installed game.</summary>
         public DirectoryInfo GameDir { get; }
 
-        /// <summary>The directory into which to install mods.</summary>
-        public DirectoryInfo ModsDir { get; }
-
         /****
         ** Installer paths
         ****/
@@ -35,9 +32,6 @@ namespace StardewModdingAPI.Installer.Framework
         ****/
         /// <summary>The full path to the directory containing the installed game.</summary>
         public string GamePath => this.GameDir.FullName;
-
-        /// <summary>The full path to the directory into which to install mods.</summary>
-        public string ModsPath => this.ModsDir.FullName;
 
         /// <summary>The full path to SMAPI's internal configuration file.</summary>
         public string ApiConfigPath { get; }
@@ -72,7 +66,6 @@ namespace StardewModdingAPI.Installer.Framework
             // base paths
             this.BundleDir = bundleDir;
             this.GameDir = gameDir;
-            this.ModsDir = new DirectoryInfo(Path.Combine(gameDir.FullName, "Mods"));
             this.GameDllPath = Path.Combine(gameDir.FullName, Constants.GameDllName);
 
             // launch scripts

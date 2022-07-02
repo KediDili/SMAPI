@@ -17,7 +17,6 @@
 ##########
 # paths
 $gamePath = "C:\Program Files (x86)\Steam\steamapps\common\Stardew Valley"
-$bundleModNames = "ConsoleCommands", "ErrorHandler", "SaveBackup"
 
 # build configuration
 $buildConfig = "Release"
@@ -81,14 +80,6 @@ foreach ($folder in $folders) {
     dotnet publish src/SMAPI.Installer --configuration $buildConfig -v minimal --runtime "$runtime" -p:OS="$msbuildPlatformName" -p:GamePath="$gamePath" -p:CopyToGameFolder="false" -p:PublishTrimmed=True -p:TrimMode=Link --self-contained true
     echo ""
     echo ""
-
-    foreach ($modName in $bundleModNames) {
-        echo "Compiling $modName for $folder..."
-        echo "-------------------------------------------------"
-        dotnet publish src/SMAPI.Mods.$modName --configuration $buildConfig -v minimal --runtime "$runtime" -p:OS="$msbuildPlatformName" -p:GamePath="$gamePath" -p:CopyToGameFolder="false"
-        echo ""
-        echo ""
-    }
 }
 
 
@@ -173,18 +164,6 @@ foreach ($folder in $folders) {
     cp "$smapiBin/System.Configuration.ConfigurationManager.dll" "$bundlePath/smapi-internal"
     cp "$smapiBin/System.Runtime.Caching.dll" "$bundlePath/smapi-internal"
     cp "$smapiBin/System.Security.Permissions.dll" "$bundlePath/smapi-internal"
-
-    # copy bundled mods
-    foreach ($modName in $bundleModNames) {
-        $fromPath = "src/SMAPI.Mods.$modName/bin/$buildConfig/$runtime/publish"
-        $targetPath = "$bundlePath/Mods/$modName"
-
-        mkdir "$targetPath" > $null
-
-        cp "$fromPath/$modName.dll" "$targetPath"
-        cp "$fromPath/$modName.pdb" "$targetPath"
-        cp "$fromPath/manifest.json" "$targetPath"
-    }
 }
 
 # DISABLED: will be handled by Linux script
