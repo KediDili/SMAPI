@@ -71,10 +71,6 @@ namespace StardewModdingAPI.Framework
             // init paths
             this.VerifyPath(Constants.LogDir);
 
-            // init log file
-            this.PurgeNormalLogs();
-            string logPath = this.GetLogPath();
-
             // init basics
             this.Settings = JsonConvert.DeserializeObject<SConfig>(File.ReadAllText(Constants.ApiConfigPath)) ?? throw new InvalidOperationException("The 'smapi-internal/config.json' file is missing or invalid. You can reinstall SMAPI to fix this.");
             if (File.Exists(Constants.ApiUserConfigPath))
@@ -82,7 +78,7 @@ namespace StardewModdingAPI.Framework
             if (developerMode.HasValue)
                 this.Settings.OverrideDeveloperMode(developerMode.Value);
 
-            this.LogManager = new LogManager(logPath: logPath, colorConfig: this.Settings.ConsoleColors, writeToConsole: writeToConsole, verboseLogging: this.Settings.VerboseLogging, isDeveloperMode: this.Settings.DeveloperMode, getScreenIdForLog: this.GetScreenIdForLog);
+            this.LogManager = new LogManager(colorConfig: this.Settings.ConsoleColors, writeToConsole: writeToConsole, verboseLogging: this.Settings.VerboseLogging, isDeveloperMode: this.Settings.DeveloperMode, getScreenIdForLog: this.GetScreenIdForLog);
 
             // log SMAPI/OS info
             this.LogManager.LogIntro(this.Settings.GetCustomSettings());
@@ -188,7 +184,6 @@ namespace StardewModdingAPI.Framework
 
             // dispose core components
             this.Game?.Dispose();
-            this.LogManager.Dispose(); // dispose last to allow for any last-second log messages
 
             // end game (moved from Game1.OnExiting to let us clean up first)
             Process.GetCurrentProcess().Kill();
@@ -221,57 +216,6 @@ namespace StardewModdingAPI.Framework
             {
                 // note: this happens before this.Monitor is initialized
                 Console.WriteLine($"Couldn't create a path: {path}\n\n{ex.GetLogSummary()}");
-            }
-        }
-
-        /// <summary>Get the absolute path to the next available log file.</summary>
-        private string GetLogPath()
-        {
-            // default path
-            {
-                FileInfo defaultFile = new(Path.Combine(Constants.LogDir, $"{Constants.LogFilename}.{Constants.LogExtension}"));
-                if (!defaultFile.Exists)
-                    return defaultFile.FullName;
-            }
-
-            // get first disambiguated path
-            for (int i = 2; i < int.MaxValue; i++)
-            {
-                FileInfo file = new(Path.Combine(Constants.LogDir, $"{Constants.LogFilename}.player-{i}.{Constants.LogExtension}"));
-                if (!file.Exists)
-                    return file.FullName;
-            }
-
-            // should never happen
-            throw new InvalidOperationException("Could not find an available log path.");
-        }
-
-        /// <summary>Delete normal (non-crash) log files created by SMAPI.</summary>
-        private void PurgeNormalLogs()
-        {
-            DirectoryInfo logsDir = new(Constants.LogDir);
-            if (!logsDir.Exists)
-                return;
-
-            foreach (FileInfo logFile in logsDir.EnumerateFiles())
-            {
-                // skip non-SMAPI file
-                if (!logFile.Name.StartsWith(Constants.LogNamePrefix, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                // skip crash log
-                if (logFile.FullName == Constants.FatalCrashLog)
-                    continue;
-
-                // delete file
-                try
-                {
-                    FileUtilities.ForceDelete(logFile);
-                }
-                catch (IOException)
-                {
-                    // ignore file if it's in use
-                }
             }
         }
 

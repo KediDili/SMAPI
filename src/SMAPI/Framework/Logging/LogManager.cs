@@ -12,14 +12,11 @@ using StardewModdingAPI.Toolkit.Utilities;
 namespace StardewModdingAPI.Framework.Logging
 {
     /// <summary>Manages the SMAPI console window and log file.</summary>
-    internal class LogManager : IDisposable
+    internal class LogManager
     {
         /*********
         ** Fields
         *********/
-        /// <summary>The log file to which to write messages.</summary>
-        private readonly LogFileManager LogFile;
-
         /// <summary>Prefixing a low-level message with this character indicates that the console interceptor should write the string without intercepting it. (The character itself is not written.)</summary>
         private const char IgnoreChar = '\u2008';
 
@@ -44,19 +41,15 @@ namespace StardewModdingAPI.Framework.Logging
         ** Initialization
         ****/
         /// <summary>Construct an instance.</summary>
-        /// <param name="logPath">The log file path to write.</param>
         /// <param name="colorConfig">The colors to use for text written to the SMAPI console.</param>
         /// <param name="writeToConsole">Whether to output log messages to the console.</param>
         /// <param name="verboseLogging">The log contexts for which to enable verbose logging, which may show a lot more information to simplify troubleshooting.</param>
         /// <param name="isDeveloperMode">Whether to enable full console output for developers.</param>
         /// <param name="getScreenIdForLog">Get the screen ID that should be logged to distinguish between players in split-screen mode, if any.</param>
-        public LogManager(string logPath, ColorSchemeConfig colorConfig, bool writeToConsole, HashSet<string> verboseLogging, bool isDeveloperMode, Func<int?> getScreenIdForLog)
+        public LogManager(ColorSchemeConfig colorConfig, bool writeToConsole, HashSet<string> verboseLogging, bool isDeveloperMode, Func<int?> getScreenIdForLog)
         {
-            // init log file
-            this.LogFile = new LogFileManager(logPath);
-
             // init monitor
-            this.GetMonitorImpl = (id, name) => new Monitor(name, LogManager.IgnoreChar, this.LogFile, colorConfig, verboseLogging.Contains("*") || verboseLogging.Contains(id), getScreenIdForLog)
+            this.GetMonitorImpl = (id, name) => new Monitor(name, LogManager.IgnoreChar, colorConfig, verboseLogging.Contains("*") || verboseLogging.Contains(id), getScreenIdForLog)
             {
                 WriteToConsole = writeToConsole,
                 ShowTraceInConsole = isDeveloperMode,
@@ -191,12 +184,6 @@ namespace StardewModdingAPI.Framework.Logging
 
             // verbose logging
             this.Monitor.VerboseLog("Verbose logging enabled.");
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            this.LogFile.Dispose();
         }
     }
 }
