@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using StardewModdingApi.Installer.Enums;
 using StardewModdingAPI.Installer.Framework;
-using StardewModdingAPI.Internal.ConsoleWriting;
 using StardewModdingAPI.Toolkit;
 using StardewModdingAPI.Toolkit.Framework;
 using StardewModdingAPI.Toolkit.Framework.GameScanning;
@@ -133,48 +132,6 @@ namespace StardewModdingApi.Installer
 
 
             /*********
-            ** Step 2: choose a theme (can't auto-detect on Linux/macOS)
-            *********/
-            MonitorColorScheme scheme = MonitorColorScheme.AutoDetect;
-            if (context.IsUnix)
-            {
-                /****
-                ** print header
-                ****/
-                this.PrintPlain("Hi there! I'll help you install or remove SMAPI. Just a few questions first.");
-                this.PrintPlain("----------------------------------------------------------------------------");
-                Console.WriteLine();
-
-                /****
-                ** show theme selector
-                ****/
-                // print question
-                this.PrintPlain("Which text looks more readable?");
-                Console.WriteLine();
-                Console.Write("   [1] ");
-                Console.WriteLine("Dark text on light background", ConsoleLogLevel.Info);
-                Console.Write("   [2] ");
-                Console.WriteLine("Light text on dark background", ConsoleLogLevel.Info);
-                Console.WriteLine();
-
-                // handle choice
-                string choice = this.InteractivelyChoose("Type 1 or 2, then press enter.", new[] { "1", "2" }, printLine: Console.WriteLine);
-                switch (choice)
-                {
-                    case "1":
-                        scheme = MonitorColorScheme.LightBackground;
-                        break;
-                    case "2":
-                        scheme = MonitorColorScheme.DarkBackground;
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Unexpected action key '{choice}'.");
-                }
-            }
-            Console.Clear();
-
-
-            /*********
             ** Step 3: find game folder
             *********/
             InstallerPaths paths;
@@ -183,7 +140,6 @@ namespace StardewModdingApi.Installer
                 ** print header
                 ****/
                 this.PrintInfo("Hi there! I'll help you install or remove SMAPI. Just a few questions first.");
-                this.PrintDebug($"Color scheme: {this.GetDisplayText(scheme)}");
                 this.PrintDebug("----------------------------------------------------------------------------");
                 Console.WriteLine();
 
@@ -228,7 +184,6 @@ namespace StardewModdingApi.Installer
                 ****/
                 this.PrintInfo("Hi there! I'll help you install or remove SMAPI. Just one question first.");
                 this.PrintDebug($"Game path: {paths.GamePath}");
-                this.PrintDebug($"Color scheme: {this.GetDisplayText(scheme)}");
                 this.PrintDebug("----------------------------------------------------------------------------");
                 Console.WriteLine();
 
@@ -273,7 +228,6 @@ namespace StardewModdingApi.Installer
                 ****/
                 this.PrintInfo($"That's all I need! I'll {action.ToString().ToLower()} SMAPI now.");
                 this.PrintDebug($"Game path: {paths.GamePath}");
-                this.PrintDebug($"Color scheme: {this.GetDisplayText(scheme)}");
                 this.PrintDebug("----------------------------------------------------------------------------");
                 Console.WriteLine();
 
@@ -373,15 +327,6 @@ namespace StardewModdingApi.Installer
                         destFileName: Path.Combine(paths.GamePath, "StardewModdingAPI.deps.json"),
                         overwrite: true
                     );
-
-                    // set SMAPI's color scheme if defined
-                    if (scheme != MonitorColorScheme.AutoDetect)
-                    {
-                        string text = File
-                            .ReadAllText(paths.ApiConfigPath)
-                            .Replace(@"""UseScheme"": ""AutoDetect""", $@"""UseScheme"": ""{scheme}""");
-                        File.WriteAllText(paths.ApiConfigPath, text);
-                    }
                 }
             }
             Console.WriteLine();
@@ -418,23 +363,6 @@ namespace StardewModdingApi.Installer
         /*********
         ** Private methods
         *********/
-        /// <summary>Get the display text for a color scheme.</summary>
-        /// <param name="scheme">The color scheme.</param>
-        private string GetDisplayText(MonitorColorScheme scheme)
-        {
-            switch (scheme)
-            {
-                case MonitorColorScheme.AutoDetect:
-                    return "auto-detect";
-                case MonitorColorScheme.DarkBackground:
-                    return "light text on dark background";
-                case MonitorColorScheme.LightBackground:
-                    return "dark text on light background";
-                default:
-                    return scheme.ToString();
-            }
-        }
-
         /// <summary>Print a message without formatting.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintPlain(string text)
@@ -446,35 +374,35 @@ namespace StardewModdingApi.Installer
         /// <param name="text">The text to print.</param>
         private void PrintDebug(string text)
         {
-            Console.WriteLine(text, ConsoleLogLevel.Debug);
+            Console.WriteLine(text);
         }
 
         /// <summary>Print a debug message.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintInfo(string text)
         {
-            Console.WriteLine(text, ConsoleLogLevel.Info);
+            Console.WriteLine(text);
         }
 
         /// <summary>Print a warning message.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintWarning(string text)
         {
-            Console.WriteLine(text, ConsoleLogLevel.Warn);
+            Console.WriteLine(text);
         }
 
         /// <summary>Print a warning message.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintError(string text)
         {
-            Console.WriteLine(text, ConsoleLogLevel.Error);
+            Console.WriteLine(text);
         }
 
         /// <summary>Print a success message.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintSuccess(string text)
         {
-            Console.WriteLine(text, ConsoleLogLevel.Success);
+            Console.WriteLine(text);
         }
 
         /// <summary>Interactively delete a file or folder path, and block until deletion completes.</summary>

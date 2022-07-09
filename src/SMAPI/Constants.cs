@@ -65,9 +65,6 @@ namespace StardewModdingAPI
         /// <summary>The directory path containing Stardew Valley's app data.</summary>
         public static string DataPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StardewValley");
 
-        /// <summary>The directory path in which error logs should be stored.</summary>
-        public static string LogDir { get; } = Path.Combine(Constants.DataPath, "ErrorLogs");
-
         /// <summary>The directory path where all saves are stored.</summary>
         public static string SavesPath { get; } = Path.Combine(Constants.DataPath, "Saves");
 
@@ -93,24 +90,6 @@ namespace StardewModdingAPI
 
         /// <summary>The file path for the overrides file for <see cref="ApiConfigPath"/>, which is applied over it.</summary>
         internal static string ApiUserConfigPath => Path.Combine(Constants.InternalFilesPath, "config.user.json");
-
-        /// <summary>The filename prefix used for all SMAPI logs.</summary>
-        internal static string LogNamePrefix { get; } = "SMAPI-";
-
-        /// <summary>The filename for SMAPI's main log, excluding the <see cref="LogExtension"/>.</summary>
-        internal static string LogFilename { get; } = $"{Constants.LogNamePrefix}latest";
-
-        /// <summary>The filename extension for SMAPI log files.</summary>
-        internal static string LogExtension { get; } = "txt";
-
-        /// <summary>The file path for the log containing the previous fatal crash, if any.</summary>
-        internal static string FatalCrashLog => Path.Combine(Constants.LogDir, "SMAPI-crash.txt");
-
-        /// <summary>The file path which stores a fatal crash message for the next run.</summary>
-        internal static string FatalCrashMarker => Path.Combine(Constants.InternalFilesPath, "StardewModdingAPI.crash.marker");
-
-        /// <summary>The file path which stores the detected update version for the next run.</summary>
-        internal static string UpdateMarker => Path.Combine(Constants.InternalFilesPath, "StardewModdingAPI.update.marker");
 
         /// <summary>The game's current semantic version.</summary>
         internal static ISemanticVersion GameVersion { get; } = new GameVersion(Game1.version);
