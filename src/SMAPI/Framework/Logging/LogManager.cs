@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading;
 using StardewModdingAPI.Framework.Models;
 using StardewModdingAPI.Internal;
-using StardewModdingAPI.Internal.ConsoleWriting;
 using StardewModdingAPI.Toolkit.Utilities;
 
 namespace StardewModdingAPI.Framework.Logging
@@ -17,9 +16,6 @@ namespace StardewModdingAPI.Framework.Logging
         /*********
         ** Fields
         *********/
-        /// <summary>Prefixing a low-level message with this character indicates that the console interceptor should write the string without intercepting it. (The character itself is not written.)</summary>
-        private const char IgnoreChar = '\u2008';
-
         /// <summary>Create a monitor instance given the ID and name.</summary>
         private readonly Func<string, string, Monitor> GetMonitorImpl;
 
@@ -41,20 +37,12 @@ namespace StardewModdingAPI.Framework.Logging
         ** Initialization
         ****/
         /// <summary>Construct an instance.</summary>
-        /// <param name="colorConfig">The colors to use for text written to the SMAPI console.</param>
-        /// <param name="writeToConsole">Whether to output log messages to the console.</param>
         /// <param name="verboseLogging">The log contexts for which to enable verbose logging, which may show a lot more information to simplify troubleshooting.</param>
-        /// <param name="isDeveloperMode">Whether to enable full console output for developers.</param>
         /// <param name="getScreenIdForLog">Get the screen ID that should be logged to distinguish between players in split-screen mode, if any.</param>
-        public LogManager(ColorSchemeConfig colorConfig, bool writeToConsole, HashSet<string> verboseLogging, bool isDeveloperMode, Func<int?> getScreenIdForLog)
+        public LogManager(HashSet<string> verboseLogging, Func<int?> getScreenIdForLog)
         {
             // init monitor
-            this.GetMonitorImpl = (id, name) => new Monitor(name, LogManager.IgnoreChar, colorConfig, verboseLogging.Contains("*") || verboseLogging.Contains(id), getScreenIdForLog)
-            {
-                WriteToConsole = writeToConsole,
-                ShowTraceInConsole = isDeveloperMode,
-                ShowFullStampInConsole = isDeveloperMode
-            };
+            this.GetMonitorImpl = (id, name) => new Monitor(name, verboseLogging.Contains("*") || verboseLogging.Contains(id), getScreenIdForLog);
             this.Monitor = this.GetMonitor("SMAPI", "SMAPI");
             this.MonitorForGame = this.GetMonitor("game", "game");
 
@@ -170,17 +158,11 @@ namespace StardewModdingAPI.Framework.Logging
         /// <param name="settings">The settings to log.</param>
         public void LogSettingsHeader(SConfig settings)
         {
-            // developer mode
-            if (settings.DeveloperMode)
-                this.Monitor.Log("You enabled developer mode, so the console will be much more verbose. You can disable it by installing the non-developer version of SMAPI.", LogLevel.Info);
-
             // warnings
             if (!settings.CheckForUpdates)
                 this.Monitor.Log("You disabled update checks, so you won't be notified of new SMAPI or mod updates. Running an old version of SMAPI is not recommended. You can undo this by reinstalling SMAPI.", LogLevel.Warn);
             if (!settings.RewriteMods)
                 this.Monitor.Log("You disabled rewriting broken mods, so many older mods may fail to load. You can undo this by reinstalling SMAPI.", LogLevel.Info);
-            if (!this.Monitor.WriteToConsole)
-                this.Monitor.Log("Writing to the terminal is disabled because the --no-terminal argument was received. This usually means launching the terminal failed.", LogLevel.Warn);
 
             // verbose logging
             this.Monitor.VerboseLog("Verbose logging enabled.");

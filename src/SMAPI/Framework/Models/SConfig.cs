@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using StardewModdingAPI.Internal.ConsoleWriting;
 using StardewModdingAPI.Toolkit.Utilities;
 
 namespace StardewModdingAPI.Framework.Models
@@ -42,9 +41,6 @@ namespace StardewModdingAPI.Framework.Models
         // Note: properties must be writable to support merging config.user.json into it.
         //
 
-        /// <summary>Whether to enable development features.</summary>
-        public bool DeveloperMode { get; set; }
-
         /// <summary>Whether to check for newer versions of SMAPI and mods on startup.</summary>
         public bool CheckForUpdates { get; set; }
 
@@ -76,9 +72,6 @@ namespace StardewModdingAPI.Framework.Models
         /// <summary>Whether SMAPI should log network traffic. Best combined with <see cref="VerboseLogging"/>, which includes network metadata.</summary>
         public bool LogNetworkTraffic { get; set; }
 
-        /// <summary>The colors to use for text written to the SMAPI console.</summary>
-        public ColorSchemeConfig ConsoleColors { get; set; }
-
         /// <summary>The mod IDs SMAPI should ignore when performing update checks or validating update keys.</summary>
         public HashSet<string> SuppressUpdateChecks { get; set; }
 
@@ -87,7 +80,6 @@ namespace StardewModdingAPI.Framework.Models
         ** Public methods
         ********/
         /// <summary>Construct an instance.</summary>
-        /// <param name="developerMode">Whether to enable development features.</param>
         /// <param name="checkForUpdates">Whether to check for newer versions of SMAPI and mods on startup.</param>
         /// <param name="paranoidWarnings">Whether to add a section to the 'mod issues' list for mods which which directly use potentially sensitive .NET APIs like file or shell access.</param>
         /// <param name="useBetaChannel">Whether to show beta versions as valid updates.</param>
@@ -98,11 +90,9 @@ namespace StardewModdingAPI.Framework.Models
         /// <param name="useRawImageLoading">Whether to use raw image data when possible, instead of initializing an XNA Texture2D instance through the GPU.</param>
         /// <param name="useCaseInsensitivePaths">>Whether to make SMAPI file APIs case-insensitive, even on Linux.</param>
         /// <param name="logNetworkTraffic">Whether SMAPI should log network traffic.</param>
-        /// <param name="consoleColors">The colors to use for text written to the SMAPI console.</param>
         /// <param name="suppressUpdateChecks">The mod IDs SMAPI should ignore when performing update checks or validating update keys.</param>
-        public SConfig(bool developerMode, bool? checkForUpdates, bool? paranoidWarnings, bool? useBetaChannel, string gitHubProjectName, string webApiBaseUrl, string[]? verboseLogging, bool? rewriteMods, bool? useRawImageLoading, bool? useCaseInsensitivePaths, bool? logNetworkTraffic, ColorSchemeConfig consoleColors, string[]? suppressUpdateChecks)
+        public SConfig(bool? checkForUpdates, bool? paranoidWarnings, bool? useBetaChannel, string gitHubProjectName, string webApiBaseUrl, string[]? verboseLogging, bool? rewriteMods, bool? useRawImageLoading, bool? useCaseInsensitivePaths, bool? logNetworkTraffic, string[]? suppressUpdateChecks)
         {
-            this.DeveloperMode = developerMode;
             this.CheckForUpdates = checkForUpdates ?? (bool)SConfig.DefaultValues[nameof(this.CheckForUpdates)];
             this.ParanoidWarnings = paranoidWarnings ?? (bool)SConfig.DefaultValues[nameof(this.ParanoidWarnings)];
             this.UseBetaChannel = useBetaChannel ?? (bool)SConfig.DefaultValues[nameof(this.UseBetaChannel)];
@@ -113,15 +103,7 @@ namespace StardewModdingAPI.Framework.Models
             this.UseRawImageLoading = useRawImageLoading ?? (bool)SConfig.DefaultValues[nameof(this.UseRawImageLoading)];
             this.UseCaseInsensitivePaths = useCaseInsensitivePaths ?? (bool)SConfig.DefaultValues[nameof(this.UseCaseInsensitivePaths)];
             this.LogNetworkTraffic = logNetworkTraffic ?? (bool)SConfig.DefaultValues[nameof(this.LogNetworkTraffic)];
-            this.ConsoleColors = consoleColors;
             this.SuppressUpdateChecks = new HashSet<string>(suppressUpdateChecks ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-        }
-
-        /// <summary>Override the value of <see cref="DeveloperMode"/>.</summary>
-        /// <param name="value">The value to set.</param>
-        public void OverrideDeveloperMode(bool value)
-        {
-            this.DeveloperMode = value;
         }
 
         /// <summary>Get the settings which have been customized by the player.</summary>

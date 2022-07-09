@@ -48,9 +48,6 @@ namespace StardewModdingApi.Installer
             yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StardewValley", "ErrorLogs"); // remove old log files
         }
 
-        /// <summary>Handles writing text to the console.</summary>
-        private IConsoleWriter ConsoleWriter;
-
 
         /*********
         ** Public methods
@@ -60,7 +57,6 @@ namespace StardewModdingApi.Installer
         public InteractiveInstaller(string bundlePath)
         {
             this.BundlePath = bundlePath;
-            this.ConsoleWriter = new ColorfulConsoleWriter(EnvironmentUtility.DetectPlatform());
         }
 
         /// <summary>Run the install or uninstall script.</summary>
@@ -152,17 +148,13 @@ namespace StardewModdingApi.Installer
                 /****
                 ** show theme selector
                 ****/
-                // get theme writers
-                ColorfulConsoleWriter lightBackgroundWriter = new(context.Platform, ColorfulConsoleWriter.GetDefaultColorSchemeConfig(MonitorColorScheme.LightBackground));
-                ColorfulConsoleWriter darkBackgroundWriter = new(context.Platform, ColorfulConsoleWriter.GetDefaultColorSchemeConfig(MonitorColorScheme.DarkBackground));
-
                 // print question
                 this.PrintPlain("Which text looks more readable?");
                 Console.WriteLine();
                 Console.Write("   [1] ");
-                lightBackgroundWriter.WriteLine("Dark text on light background", ConsoleLogLevel.Info);
+                Console.WriteLine("Dark text on light background", ConsoleLogLevel.Info);
                 Console.Write("   [2] ");
-                darkBackgroundWriter.WriteLine("Light text on dark background", ConsoleLogLevel.Info);
+                Console.WriteLine("Light text on dark background", ConsoleLogLevel.Info);
                 Console.WriteLine();
 
                 // handle choice
@@ -171,11 +163,9 @@ namespace StardewModdingApi.Installer
                 {
                     case "1":
                         scheme = MonitorColorScheme.LightBackground;
-                        this.ConsoleWriter = lightBackgroundWriter;
                         break;
                     case "2":
                         scheme = MonitorColorScheme.DarkBackground;
-                        this.ConsoleWriter = darkBackgroundWriter;
                         break;
                     default:
                         throw new InvalidOperationException($"Unexpected action key '{choice}'.");
@@ -456,35 +446,35 @@ namespace StardewModdingApi.Installer
         /// <param name="text">The text to print.</param>
         private void PrintDebug(string text)
         {
-            this.ConsoleWriter.WriteLine(text, ConsoleLogLevel.Debug);
+            Console.WriteLine(text, ConsoleLogLevel.Debug);
         }
 
         /// <summary>Print a debug message.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintInfo(string text)
         {
-            this.ConsoleWriter.WriteLine(text, ConsoleLogLevel.Info);
+            Console.WriteLine(text, ConsoleLogLevel.Info);
         }
 
         /// <summary>Print a warning message.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintWarning(string text)
         {
-            this.ConsoleWriter.WriteLine(text, ConsoleLogLevel.Warn);
+            Console.WriteLine(text, ConsoleLogLevel.Warn);
         }
 
         /// <summary>Print a warning message.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintError(string text)
         {
-            this.ConsoleWriter.WriteLine(text, ConsoleLogLevel.Error);
+            Console.WriteLine(text, ConsoleLogLevel.Error);
         }
 
         /// <summary>Print a success message.</summary>
         /// <param name="text">The text to print.</param>
         private void PrintSuccess(string text)
         {
-            this.ConsoleWriter.WriteLine(text, ConsoleLogLevel.Success);
+            Console.WriteLine(text, ConsoleLogLevel.Success);
         }
 
         /// <summary>Interactively delete a file or folder path, and block until deletion completes.</summary>
