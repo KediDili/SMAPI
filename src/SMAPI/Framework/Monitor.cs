@@ -25,20 +25,12 @@ namespace StardewModdingAPI.Framework
 
 
         /*********
-        ** Accessors
-        *********/
-        /// <inheritdoc />
-        public bool IsVerbose { get; }
-
-
-        /*********
         ** Public methods
         *********/
         /// <summary>Construct an instance.</summary>
         /// <param name="source">The name of the module which logs messages using this instance.</param>
-        /// <param name="isVerbose">Whether verbose logging is enabled. This enables more detailed diagnostic messages than are normally needed.</param>
         /// <param name="getScreenIdForLog">Get the screen ID that should be logged to distinguish between players in split-screen mode, if any.</param>
-        public Monitor(string source, bool isVerbose, Func<int?> getScreenIdForLog)
+        public Monitor(string source, Func<int?> getScreenIdForLog)
         {
             // validate
             if (string.IsNullOrWhiteSpace(source))
@@ -46,7 +38,6 @@ namespace StardewModdingAPI.Framework
 
             // initialize
             this.Source = source;
-            this.IsVerbose = isVerbose;
             this.GetScreenIdForLog = getScreenIdForLog;
         }
 
@@ -61,13 +52,6 @@ namespace StardewModdingAPI.Framework
         {
             if (this.LogOnceCache.Add($"{message}|{level}"))
                 this.LogImpl(this.Source, message, (ConsoleLogLevel)level);
-        }
-
-        /// <inheritdoc />
-        public void VerboseLog(string message)
-        {
-            if (this.IsVerbose)
-                this.Log(message);
         }
 
 

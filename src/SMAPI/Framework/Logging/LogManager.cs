@@ -37,12 +37,11 @@ namespace StardewModdingAPI.Framework.Logging
         ** Initialization
         ****/
         /// <summary>Construct an instance.</summary>
-        /// <param name="verboseLogging">The log contexts for which to enable verbose logging, which may show a lot more information to simplify troubleshooting.</param>
         /// <param name="getScreenIdForLog">Get the screen ID that should be logged to distinguish between players in split-screen mode, if any.</param>
-        public LogManager(HashSet<string> verboseLogging, Func<int?> getScreenIdForLog)
+        public LogManager(Func<int?> getScreenIdForLog)
         {
             // init monitor
-            this.GetMonitorImpl = (id, name) => new Monitor(name, verboseLogging.Contains("*") || verboseLogging.Contains(id), getScreenIdForLog);
+            this.GetMonitorImpl = (id, name) => new Monitor(name, getScreenIdForLog);
             this.Monitor = this.GetMonitor("SMAPI", "SMAPI");
             this.MonitorForGame = this.GetMonitor("game", "game");
 
@@ -163,9 +162,6 @@ namespace StardewModdingAPI.Framework.Logging
                 this.Monitor.Log("You disabled update checks, so you won't be notified of new SMAPI or mod updates. Running an old version of SMAPI is not recommended. You can undo this by reinstalling SMAPI.", LogLevel.Warn);
             if (!settings.RewriteMods)
                 this.Monitor.Log("You disabled rewriting broken mods, so many older mods may fail to load. You can undo this by reinstalling SMAPI.", LogLevel.Info);
-
-            // verbose logging
-            this.Monitor.VerboseLog("Verbose logging enabled.");
         }
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using StardewModdingAPI.Toolkit.Utilities;
 
 namespace StardewModdingAPI.Framework.Models
@@ -19,7 +18,6 @@ namespace StardewModdingAPI.Framework.Models
             [nameof(UseBetaChannel)] = Constants.ApiVersion.IsPrerelease(),
             [nameof(GitHubProjectName)] = "Pathoschild/SMAPI",
             [nameof(WebApiBaseUrl)] = "https://smapi.io/api/",
-            [nameof(LogNetworkTraffic)] = false,
             [nameof(RewriteMods)] = true,
             [nameof(UseRawImageLoading)] = true,
             [nameof(UseCaseInsensitivePaths)] = Constants.Platform is Platform.Android or Platform.Linux
@@ -56,10 +54,6 @@ namespace StardewModdingAPI.Framework.Models
         /// <summary>The base URL for SMAPI's web API, used to perform update checks.</summary>
         public string WebApiBaseUrl { get; set; }
 
-        /// <summary>The log contexts for which to enable verbose logging, which may show a lot more information to simplify troubleshooting.</summary>
-        /// <remarks>The possible values are "*" (everything is verbose), "SMAPI", (SMAPI itself), or mod IDs.</remarks>
-        public HashSet<string> VerboseLogging { get; set; }
-
         /// <summary>Whether SMAPI should rewrite mods for compatibility.</summary>
         public bool RewriteMods { get; set; }
 
@@ -68,9 +62,6 @@ namespace StardewModdingAPI.Framework.Models
 
         /// <summary>Whether to make SMAPI file APIs case-insensitive, even on Linux.</summary>
         public bool UseCaseInsensitivePaths { get; set; }
-
-        /// <summary>Whether SMAPI should log network traffic. Best combined with <see cref="VerboseLogging"/>, which includes network metadata.</summary>
-        public bool LogNetworkTraffic { get; set; }
 
         /// <summary>The mod IDs SMAPI should ignore when performing update checks or validating update keys.</summary>
         public HashSet<string> SuppressUpdateChecks { get; set; }
@@ -85,24 +76,20 @@ namespace StardewModdingAPI.Framework.Models
         /// <param name="useBetaChannel">Whether to show beta versions as valid updates.</param>
         /// <param name="gitHubProjectName">SMAPI's GitHub project name, used to perform update checks.</param>
         /// <param name="webApiBaseUrl">The base URL for SMAPI's web API, used to perform update checks.</param>
-        /// <param name="verboseLogging">The log contexts for which to enable verbose logging, which may show a lot more information to simplify troubleshooting.</param>
         /// <param name="rewriteMods">Whether SMAPI should rewrite mods for compatibility.</param>
         /// <param name="useRawImageLoading">Whether to use raw image data when possible, instead of initializing an XNA Texture2D instance through the GPU.</param>
         /// <param name="useCaseInsensitivePaths">>Whether to make SMAPI file APIs case-insensitive, even on Linux.</param>
-        /// <param name="logNetworkTraffic">Whether SMAPI should log network traffic.</param>
         /// <param name="suppressUpdateChecks">The mod IDs SMAPI should ignore when performing update checks or validating update keys.</param>
-        public SConfig(bool? checkForUpdates, bool? paranoidWarnings, bool? useBetaChannel, string gitHubProjectName, string webApiBaseUrl, string[]? verboseLogging, bool? rewriteMods, bool? useRawImageLoading, bool? useCaseInsensitivePaths, bool? logNetworkTraffic, string[]? suppressUpdateChecks)
+        public SConfig(bool? checkForUpdates, bool? paranoidWarnings, bool? useBetaChannel, string gitHubProjectName, string webApiBaseUrl, bool? rewriteMods, bool? useRawImageLoading, bool? useCaseInsensitivePaths, string[]? suppressUpdateChecks)
         {
             this.CheckForUpdates = checkForUpdates ?? (bool)SConfig.DefaultValues[nameof(this.CheckForUpdates)];
             this.ParanoidWarnings = paranoidWarnings ?? (bool)SConfig.DefaultValues[nameof(this.ParanoidWarnings)];
             this.UseBetaChannel = useBetaChannel ?? (bool)SConfig.DefaultValues[nameof(this.UseBetaChannel)];
             this.GitHubProjectName = gitHubProjectName;
             this.WebApiBaseUrl = webApiBaseUrl;
-            this.VerboseLogging = new HashSet<string>(verboseLogging ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
             this.RewriteMods = rewriteMods ?? (bool)SConfig.DefaultValues[nameof(this.RewriteMods)];
             this.UseRawImageLoading = useRawImageLoading ?? (bool)SConfig.DefaultValues[nameof(this.UseRawImageLoading)];
             this.UseCaseInsensitivePaths = useCaseInsensitivePaths ?? (bool)SConfig.DefaultValues[nameof(this.UseCaseInsensitivePaths)];
-            this.LogNetworkTraffic = logNetworkTraffic ?? (bool)SConfig.DefaultValues[nameof(this.LogNetworkTraffic)];
             this.SuppressUpdateChecks = new HashSet<string>(suppressUpdateChecks ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
         }
 
@@ -120,9 +107,6 @@ namespace StardewModdingAPI.Framework.Models
 
             if (!this.SuppressUpdateChecks.SetEquals(SConfig.DefaultSuppressUpdateChecks))
                 custom[nameof(this.SuppressUpdateChecks)] = $"[{string.Join(", ", this.SuppressUpdateChecks)}]";
-
-            if (this.VerboseLogging.Any())
-                custom[nameof(this.VerboseLogging)] = $"[{string.Join(", ", this.VerboseLogging)}]";
 
             return custom;
         }

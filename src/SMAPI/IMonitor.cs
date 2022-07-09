@@ -4,13 +4,6 @@ namespace StardewModdingAPI
     public interface IMonitor
     {
         /*********
-        ** Accessors
-        *********/
-        /// <summary>Whether verbose logging is enabled. This enables more detailed diagnostic messages than are normally needed.</summary>
-        bool IsVerbose { get; }
-
-
-        /*********
         ** Methods
         *********/
         /// <summary>Log a message for the player or developer.</summary>
@@ -22,9 +15,5 @@ namespace StardewModdingAPI
         /// <param name="message">The message to log.</param>
         /// <param name="level">The log severity level.</param>
         void LogOnce(string message, LogLevel level = LogLevel.Trace);
-
-        /// <summary>Log a message that only appears when <see cref="IsVerbose"/> is enabled.</summary>
-        /// <param name="message">The message to log.</param>
-        void VerboseLog(string message);
     }
 }

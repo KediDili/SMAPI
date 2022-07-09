@@ -62,9 +62,7 @@ namespace StardewModdingAPI.Framework
         ** Public methods
         *********/
         /// <summary>Construct an instance.</summary>
-        /// <param name="writeToConsole">Whether to output log messages to the console.</param>
-        /// <param name="developerMode">Whether to enable development features, or <c>null</c> to use the value from the settings file.</param>
-        public SCore(bool writeToConsole, bool? developerMode)
+        public SCore()
         {
             SCore.Instance = this;
 
@@ -76,7 +74,7 @@ namespace StardewModdingAPI.Framework
             if (File.Exists(Constants.ApiUserConfigPath))
                 JsonConvert.PopulateObject(File.ReadAllText(Constants.ApiUserConfigPath), this.Settings);
 
-            this.LogManager = new LogManager(verboseLogging: this.Settings.VerboseLogging, getScreenIdForLog: this.GetScreenIdForLog);
+            this.LogManager = new LogManager(getScreenIdForLog: this.GetScreenIdForLog);
 
             // log SMAPI/OS info
             this.LogManager.LogIntro(this.Settings.GetCustomSettings());

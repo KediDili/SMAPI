@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using StardewModdingAPI.Framework;
@@ -25,15 +24,14 @@ namespace StardewModdingAPI
         ** Public methods
         *********/
         /// <summary>The main entry point which hooks into and launches the game.</summary>
-        /// <param name="args">The command-line arguments.</param>
-        public static void Main(string[] args)
+        public static void Main()
         {
             Console.Title = $"SMAPI {EarlyConstants.RawApiVersion}";
 
             try
             {
                 AppDomain.CurrentDomain.AssemblyResolve += Program.CurrentDomain_AssemblyResolve;
-                Program.Start(args);
+                Program.Start();
             }
             catch (BadImageFormatException ex) when (ex.FileName == EarlyConstants.GameAssemblyName)
             {
@@ -94,18 +92,11 @@ namespace StardewModdingAPI
         }
 
         /// <summary>Initialize SMAPI and launch the game.</summary>
-        /// <param name="args">The command-line arguments.</param>
         /// <remarks>This method is separate from <see cref="Main"/> because that can't contain any references to assemblies loaded by <see cref="CurrentDomain_AssemblyResolve"/> (e.g. via <see cref="Constants"/>), or Mono will incorrectly show an assembly resolution error before assembly resolution is set up.</remarks>
-        private static void Start(string[] args)
+        private static void Start()
         {
-            // get flags
-            bool writeToConsole = !args.Contains("--no-terminal") && Environment.GetEnvironmentVariable("SMAPI_NO_TERMINAL") == null;
-
-            // get mods path
-            bool? developerMode = null;
-
             // load SMAPI
-            using SCore core = new(writeToConsole, developerMode);
+            using SCore core = new();
             core.RunInteractively();
         }
 
